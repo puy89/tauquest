@@ -213,14 +213,14 @@ class Join(Expression):
             ents = un.execute(db)
             if un.is_func:
                 if self.type == Course:
-                    return {ent for ent in db.courses.values() if ents(vars(ent)[pred])}
+                    return {ent for ent in db.courses.values() if getattr(ent, pred)}
                 if self.type == Lecturer:
-                    return {ent for ent in db.lecturers.values() if ents(vars(ent)[pred])}
+                    return {ent for ent in db.lecturers.values() if getattr(ent, pred)}
             else:    
                 if self.type == Course:
-                    return {ent for ent in db.courses.values() if vars(ent)[pred] in ents}
+                    return {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
                 if self.type == Lecturer:
-                    return {ent for ent in db.lecturers.values() if vars(ent)[pred] in ents}
+                    return {ent for ent in db.lecturers.values() if getattr(ent, pred) in ents}
         elif self.is_attr:
             return {getattr(ent, pred) for ent in un.execute(db)}
         elif self.is_db_join:
