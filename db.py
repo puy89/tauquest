@@ -66,14 +66,14 @@ class Course(Base):
 Course.lecturer.type = Lecturer
     
 
-funcs = {'<': lambda x, y: x < y,
-         '>': lambda x, y: x > y,
-         '<=': lambda x, y: x <= y,
-         '>=': lambda x, y: x >= y,
-         'contains': lambda x, y: y in x,
-         'contained': lambda x, y: x in y,
-         'startswith': lambda x, y: x.startswith(y),
-         'initof': lambda x, y: x.startswith(y),
+funcs = {'<': (lambda x, y: x < y, Integer),
+         '>': (lambda x, y: x > y, Integer),
+         '<=': (lambda x, y: x <= y, Integer),
+         '>=': (lambda x, y: x >= y, Integer),
+         'contains': (lambda x, y: y in x, String),
+         'contained': (lambda x, y: x in y, String) ,
+         'startswith': (lambda x, y: x.startswith(y), String),
+         'initof': (lambda x, y: x.startswith(y), String),
         }
 
 name_types = {Course: 'Course',
@@ -82,6 +82,7 @@ name_types = {Course: 'Course',
               String: 'String',
               Unicode: 'Unicode'}
 types_name = {v: k for k, v in name_types.items()}
+
 
 class Expression(object):
     pass
@@ -161,19 +162,18 @@ class Intersect(Expression):
         return '({}&{})'.format(self.exp1, self.exp2)
 
 
-    
-class Join(Expression):
-    def __init__(self, pred, un, span=[], pred_span=[]):
+class Predicate(object):
+    def __init__(self, pred, span=()):
         self.pred = pred
-        self.un = un
+        self.span = span
         self.is_attr = False
         self.is_db_join = False
         self.is_func = False
         self.is_rev = False
-        self.span = span
-        self.pred_span = span
+        self.unknown = False
         if pred == 'teach' and un.type == Lecturer:
-            self.type = Course
+            self.ltype = Course
+            self.rtype = Lecturer
             self.is_db_join = True
         if pred[:4] == 'rev_':
             self.pred = pred = pred[4:]
@@ -181,41 +181,74 @@ class Join(Expression):
         attr = vars(Course).get(pred)
         if attr is not None:
             if self.is_rev:
-                self.type = Course
+                self.rtype = type(attr.type) 
+                self.ltype = Course
             else:
-                self.type = type(attr.type)
+                self.rtype = Course
+                self.ltype = type(attr.type)
+                
             self.is_attr = True
         else:
             attr = vars(Lecturer).get(pred)
             if attr is not None:
                 if self.is_rev:
-                    self.type = Lecturer
+                    self.rtype = type(attr.type)
+                    self.ltype = Lecturer
                 else:
-                    self.type = type(attr.type)
+                    self.rtype = Lecturer
+                    self.ltype = type(attr.type) 
                 self.is_attr = True
             else:
-                self.is_func = True
-                self.type = un.type
+                func = funcs.get(pred)
+                if func is not None:
+                    self.ltype = self.rtype = func[1]
+                    self.is_func = True
+                else:
+                    self.unknown = True
+                
             
+    
+    def __str__(self):
+        return '{}{}'.format('rev_'*self.is_rev, self.pred)
+    
+class Join(Expression):
+    def __init__(self, pred, un, span=(), pred_span=()):
+        self.un = un
+        self.span = span
+        if isinstance(pred, str): 
+            self.pred = Predicate(pred, pred_span)
+        else:
+            self.pred = pred
+        self.is_attr = self.pred.is_attr
+        
+        self.is_attr = self.pred.is_attr
+        self.is_db_join = self.pred.is_db_join
+        self.is_func = self.pred.is_func
+        self.is_rev = self.pred.is_rev
+        if self.pred.is_func:
+            self.type = self.un.type
+        else:
+            self.type = self.pred.ltype
+        
     
     def execute(self, db):
         un = self.un
-        pred = self.pred
+        pred = self.pred.pred
         if self.is_func:
             if self.un.is_func:
                 pass
                 #TODO bom
             else:
-                func = funcs[pred]
+                func = funcs[pred][0]
                 ents = un.execute(db)
                 return lambda x: any(func(x, ent) for ent in ents)
         elif self.is_rev:
             ents = un.execute(db)
             if un.is_func:
                 if self.type == Course:
-                    return {ent for ent in db.courses.values() if getattr(ent, pred)}
+                    return {ent for ent in db.courses.values() if ents(getattr(ent, pred))}
                 if self.type == Lecturer:
-                    return {ent for ent in db.lecturers.values() if getattr(ent, pred)}
+                    return {ent for ent in db.lecturers.values() if ents(getattr(ent, pred))}
             else:    
                 if self.type == Course:
                     return {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
@@ -228,7 +261,7 @@ class Join(Expression):
             return {ent for ent in un.execute(db) for c in db.courses if c.course.lecturer_id == ent.id}
 
     def __str__(self):
-        return '({}{}.{})'.format('rev_'*self.is_rev, self.pred, self.un)
+        return '({}.{})'.format(self.pred, self.un)
 
 class Count(Expression):
     #TODO: handle mutiplicity
