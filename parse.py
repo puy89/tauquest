@@ -1,5 +1,6 @@
 import numpy as np
 import nltk
+from datetime import datetime
 from db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
                Course, Lecturer, Predicate)
 N = 2000
@@ -93,35 +94,77 @@ def parse_sent(sent, theta, db, k=10):
             if isinstance(terms[0],  Expression):
                 for term in terms:
                     term.span = i, i
+                    span_exps[i, i].append((term, None))
             if isinstance(terms[0],  Predicate):
                 for term in terms:
-                    term.span = i, i       
-            span_exps[i, i].extend(terms)
+                    term.span = i, i
+                    span_exps[i, i].append((term, None))
     for l in xrange(1, n):
         for i in xrange(0, n-l):
             j = i+l
             exps = []                
             for m in xrange(i, j):
                 if len(span_exps[m+1, j]) == 0:
-                    for left in span_exps[i, m]:
-                        exps.append(left)
+                    for left, feats in span_exps[i, m]:
+                        exps.append((left, feats))
                 elif len(span_exps[i, m]) == 0:
-                    for right in span_exps[m+1, j]:
-                        exps.append(right)
+                    for right, feats in span_exps[m+1, j]:
+                        exps.append((right, feats))
                 else:
-                    for left in span_exps[i, m]:                         
-                        for right in span_exps[m+1, j]:
+                    for left, _ in span_exps[i, m]:                         
+                        for right, _ in span_exps[m+1, j]:
                             if  isinstance(left,  Predicate):
-                                if isinstance(right,  Expression) and right.type == left.rtype:                                    
-                                    exps.append(Join(left, right, (i, j), (i, m)))
+                                if isinstance(right,  Expression) and right.type == left.rtype:
+                                    exp = Join(left, right, (i, j), (i, m))
+                                    exps.append((exp, extract_features(sent, exp, db)))
                             elif isinstance(left,  Expression):
                                 if isinstance(right,  Predicate) and left.type == right.rtype:
-                                    exps.append(Join(right, left, (i, j), (m+1, j)))
+                                    exp = Join(right, left, (i, j), (m+1, j))
+                                    exps.append((exp, extract_features(sent, exp, db)))
                                 elif isinstance(right,  Expression):
                                     if right.type == left.type:
-                                        exps.append(Intersect(right, left, (i, j)))
+                                        exp = Intersect(right, left, (i, j))
+                                        exps.append((exp, extract_features(sent, exp, db)))
             #TODO create predicate Class??
-            exps.sort(key=lambda exp: extract_features(sent, exp, db).dot(theta) if isinstance(exp,  Expression) else 0)
-            span_exps[i, j] = exps[:k]
-    1/0
-    return span_exps[0, n-1][0]
+            exps.sort(key=lambda (exp, feats): feats.dot(theta) if feats is not None else np.inf)
+            span_exps[i, j] = exps[-k:]
+    return span_exps[0, n-1]
+
+eps = 1e-06
+
+def adagrad(gradient, x0, step, iterations, PRINT_EVERY=10):
+    ANNEAL_EVERY = 20000
+    x = x0
+    expcost = None
+    begin = datetime.now()
+    G = np.zeros_like(x0)
+    for iter in xrange(0 + 1, iterations + 1):
+        # Don't forget to apply the postprocessing after every iteration!
+        # You might want to print the progress every few iterations.
+        cost = None
+        ### YOUR CODE HERE
+        grad = gradient(x)
+        G += grad ** 2
+        x -= step*grad/(np.sqrt(G)+eps)
+        ### END YOUR CODE
+
+
+        if iter % ANNEAL_EVERY == 0:
+            step *= 0.5
+
+    return x
+
+    
+def train(quests, ans, db, k=10, iters=None):
+    def gradient(theta):
+        i = np.random.randint(0, len(quests))
+        exps, feats = np.array(parse_sent(quests[i], theta, db, k)).T
+        feats = np.array([feat for feat in feats], float)
+        ps = np.exp(feats.dot(theta))
+        agree = [exp.execute(db) == ans[i] for exp in exps]
+        assert any(agree)
+        qs = ps*agree/ps.dot(agree)
+        return feats.T.dot(qs - ps)
+    iters = iters or len(quests)
+    return adagrad(gradient, np.zeros(N), 0.01, iters)
+    
