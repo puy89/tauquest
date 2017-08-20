@@ -1,6 +1,7 @@
 import numpy as np
-import nltk
 from datetime import datetime
+import csv
+import nltk
 from db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
                Course, Lecturer, Predicate)
 N = 2000
@@ -114,11 +115,11 @@ def parse_sent(sent, theta, db, k=10):
                     for left, _ in span_exps[i, m]:                         
                         for right, _ in span_exps[m+1, j]:
                             if  isinstance(left,  Predicate):
-                                if isinstance(right,  Expression) and right.type == left.rtype:
+                                if isinstance(right,  Expression) and right.type == left.rtype and not (left.is_func and right.is_func):
                                     exp = Join(left, right, (i, j), (i, m))
                                     exps.append((exp, extract_features(sent, exp, db)))
                             elif isinstance(left,  Expression):
-                                if isinstance(right,  Predicate) and left.type == right.rtype:
+                                if isinstance(right,  Predicate) and left.type == right.rtype and not (left.is_func and right.is_func):
                                     exp = Join(right, left, (i, j), (m+1, j))
                                     exps.append((exp, extract_features(sent, exp, db)))
                                 elif isinstance(right,  Expression):
@@ -167,4 +168,10 @@ def train(quests, ans, db, k=10, iters=None):
         return feats.T.dot(qs - ps)
     iters = iters or len(quests)
     return adagrad(gradient, np.zeros(N), 0.01, iters)
-    
+
+def load_dataset(fn='questions-answers.csv'):
+    f = open(fn)
+    r = csv.reader(f)
+    quests, ans = np.array([(row[0], set(row[1:])) for row in r]).T
+    f.close()
+    return quests, ans
