@@ -4,6 +4,7 @@ import sys
 import re
 from db import Base, Course, Lecturer, engine, DBSession
 
+site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
  
 # Create all tables in the engine. This is equivalent to "Create Table"
 # statements in raw SQL.
@@ -29,7 +30,12 @@ f = open('alphon.csv')
 r = csv.reader(f)
 lecturers = {}
 for row in r:
-    lecturer_name = unicode(row[alpg_title2idx['hebrew_name']])
+    cell = row[alpg_title2idx['hebrew_name']]
+    match = site_pattern.findall(cell)
+    if match:
+        (site, cell), = match
+        cell = cell.replace('&#039;', '')
+    lecturer_name = unicode(cell)
     lecturer = lecturers.get(lecturer_name)
     if lecturer is None:
         lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
@@ -54,7 +60,8 @@ for row in r:
         day = ord(row[title2idx['day']][1]) - 0x90
     else:
         day = -1
-    lecturer_name = unicode(row[title2idx['lecturer']])
+    words = row[title2idx['lecturer']].split(' ')
+    lecturer_name = unicode(' '.join(words[:1] + words[:0:-1]))
     lecturer = lecturers.get(lecturer_name)
     if lecturer is None:
         lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name)
