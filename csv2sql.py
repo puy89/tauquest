@@ -10,7 +10,16 @@ site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
 # statements in raw SQL.
 Base.metadata.create_all(engine)
 
-
+MR = u'\u05de\u05e8'
+MS = u"\u05d2\u05d1'"
+PROF = u'\u05e4\u05e8\u05d5\u05e4'
+PROFQ = u"\u05e4\u05e8\u05d5\u05e4'"
+DR = u'\u05d3"\u05e8'
+honor_heb2en = {MR: 'Mr.',
+                MS: 'Ms.',
+               PROF: 'Prof',
+               PROFQ: 'Prof',
+               DR: 'Dr'}
 
 def_cols = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
 alph_cols = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'office']
@@ -35,13 +44,20 @@ for row in r:
     if match:
         (site, cell), = match
         cell = cell.replace('&#039;', '')
+        cell = cell.replace('&quot;', '"')
+        cell = cell.replace('-', ' ')
     lecturer_name = unicode(cell)
+    words = lecturer_name.split()
+    honor = honor_heb2en.get(words[0])
+    if honor is not None:
+        lecturer_name = ' '.join(words[1:])
     lecturer = lecturers.get(lecturer_name)
     if lecturer is None:
         lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
                            title=unicode(row[alpg_title2idx['title']]), 
                            phone=unicode(row[alpg_title2idx['phone']]),
-                           fax=unicode(row[alpg_title2idx['fax']]), email=unicode(row[alpg_title2idx['email']]))
+                           fax=unicode(row[alpg_title2idx['fax']]), email=unicode(row[alpg_title2idx['email']]),
+                           honor=honor)
         lecturers[lecturer_name] = lecturer
         s.add(lecturer)
 s.commit()
@@ -60,13 +76,17 @@ for row in r:
         day = ord(row[title2idx['day']][1]) - 0x90
     else:
         day = -1
-    words = row[title2idx['lecturer']].split(' ')
-    lecturer_name = unicode(' '.join(words[:1] + words[:0:-1]))
+    words = row[title2idx['lecturer']].replace('-', ' ').split(' ')
+    honor = honor_heb2en.get(words[0])
+    lecturer_name = unicode(' '.join(words[-1:] + words[1:-1]))
     lecturer = lecturers.get(lecturer_name)
     if lecturer is None:
-        lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name)
-        lecturers[lecturer_name] = lecturer
-        s.add(lecturer)
+        if lecturer_name.rstrip():
+            lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name, honor=honor)
+            lecturers[lecturer_name] = lecturer
+            s.add(lecturer)
+    elif lecturer.honor is None:
+        lecturer.honor = honor
     course = Course(id=int(row[title2idx['course_id']].replace('-', '')),
                     name=row[title2idx['name']],
                     hebrew_name=unicode(row[title2idx['hebrew_name']]),
