@@ -76,9 +76,12 @@ for row in r:
         day = ord(row[title2idx['day']][1]) - 0x90
     else:
         day = -1
-    words = row[title2idx['lecturer']].replace('-', ' ').split(' ')
+    words = unicode(row[title2idx['lecturer']].lstrip().rstrip().replace('-', ' ')).split(' ')
     honor = honor_heb2en.get(words[0])
-    lecturer_name = unicode(' '.join(words[-1:] + words[1:-1]))
+    if honor is None:
+        lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))
+    else:
+        lecturer_name = unicode(' '.join(words[-1:] + words[1:-1]))
     lecturer = lecturers.get(lecturer_name)
     if lecturer is None:
         if lecturer_name.rstrip():
