@@ -22,7 +22,7 @@ honor_heb2en = {MR: 'Mr.',
                DR: 'Dr'}
 
 def_cols = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
-alph_cols = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'office']
+alph_cols = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'name', 'office']
 
 title2idx = {t: i  for i, t in enumerate(def_cols)}
 alpg_title2idx = {t: i  for i, t in enumerate(alph_cols)}
@@ -37,6 +37,7 @@ def clear_name(s):
 s = DBSession()
 f = open('alphon.csv')
 r = csv.reader(f)
+n_f = open('names', 'w')
 lecturers = {}
 for row in r:
     cell = row[alpg_title2idx['hebrew_name']]
@@ -47,13 +48,15 @@ for row in r:
         cell = cell.replace('&quot;', '"')
         cell = cell.replace('-', ' ')
     lecturer_name = unicode(cell)
-    words = lecturer_name.split()
+	words = lecturer_name.split()
     honor = honor_heb2en.get(words[0])
     if honor is not None:
         lecturer_name = ' '.join(words[1:])
     lecturer = lecturers.get(lecturer_name)
+    print >> n_f, lecturer_name
     if lecturer is None:
         lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
+							name=unicode(row[alpg_title2idx['name']]),
                            title=unicode(row[alpg_title2idx['title']]), 
                            phone=unicode(row[alpg_title2idx['phone']]),
                            fax=unicode(row[alpg_title2idx['fax']]), email=unicode(row[alpg_title2idx['email']]),
@@ -62,6 +65,7 @@ for row in r:
         s.add(lecturer)
 s.commit()
 f.close()
+n_f.close()
 
 f = open('courses.csv')
 r = csv.reader(f)

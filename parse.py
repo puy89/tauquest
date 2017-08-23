@@ -49,7 +49,8 @@ def extract_features(sent, exp, db):
     return feats
 
 lexicon = {'who': ['lecturer'],
-           'teach': ['lecturer'],
+           'teach': ['lecturer', 'teach'],
+		   'taught': ['lecturer', 'teach'],
            'when': ['day', 'start_time', 'semester'], # add full time
            'email': ['email'],
            'address': ['email'],
@@ -77,6 +78,11 @@ def update_lexicon(db):
     for course in db.courses.values():
         lexicon.setdefault(course.name,  []).append(Entity(course.id, Course))
         lexicon.setdefault(course.name.lower(),  []).append(Entity(course.id, Course))
+    for lecturer in db.lecturers.values():
+		if lecturer.name: #not created when created courses table
+			lexicon.setdefault(lecturer.name,  []).append(Entity(lecturer.id, Lecturer))
+			lexicon.setdefault(lecturer.name.lower(),  []).append(Entity(lecturer.id, Lecturer))
+		
     #TODO: add english name of lecturers
 
     
@@ -85,6 +91,10 @@ def parse_sent(sent, theta, db, k=10):
     for course in db.courses.values():
         if course.name in sent:
             sent = sent.replace(course.name, course.name.replace(' ', '-'))
+    for lecturer in db.lecturers.values():
+		if lecturer.name: #not created when created courses table
+			if lecturer.name in sent:
+				sent = sent.replace(lecturer.name, lecturer.name.replace(' ', '-'))
     sent = nltk.pos_tag(nltk.word_tokenize(sent))
     n = len(sent)
     span_exps = {}
@@ -126,7 +136,6 @@ def parse_sent(sent, theta, db, k=10):
                                     if right.type == left.type:
                                         exp = Intersect(right, left, (i, j))
                                         exps.append((exp, extract_features(sent, exp, db)))
-            #TODO create predicate Class??
             exps.sort(key=lambda (exp, feats): feats.dot(theta) if feats is not None else np.inf)
             span_exps[i, j] = exps[-k:]
     return span_exps[0, n-1]

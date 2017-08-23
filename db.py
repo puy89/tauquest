@@ -31,6 +31,8 @@ class Lecturer(Base):
     phone = Column(Unicode(250))
     fax = Column(Unicode(250))
     title = Column(Unicode(250))
+    honor = Column(Unicode(250))
+
     
     def __str__(self):
         return str(self.__dict__)
@@ -171,7 +173,7 @@ class Predicate(object):
         self.is_func = False
         self.is_rev = False
         self.unknown = False
-        if pred == 'teach' and un.type == Lecturer:
+        if pred == 'teach':
             self.ltype = Course
             self.rtype = Lecturer
             self.is_db_join = True
@@ -258,7 +260,7 @@ class Join(Expression):
             return {getattr(ent, pred) for ent in un.execute(db)}
         elif self.is_db_join:
             #TODO: other joins?
-            return {ent for ent in un.execute(db) for c in db.courses if c.course.lecturer_id == ent.id}
+            return {ent for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
 
     def __str__(self):
         return '({}.{})'.format(self.pred, self.un)
