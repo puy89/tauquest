@@ -51,6 +51,7 @@ def extract_features(sent, exp, db):
 lexicon = {'who': ['lecturer'],
            'teach': ['lecturer', 'teach'],
 		   'taught': ['lecturer', 'teach'],
+		   'lecturer': ['lecturer', 'teach'],
            'when': ['day', 'start_time', 'semester'], # add full time
            'email': ['email'],
            'address': ['email'],

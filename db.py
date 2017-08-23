@@ -68,15 +68,16 @@ class Course(Base):
 Course.lecturer.type = Lecturer
     
 
-funcs = {'<': (lambda x, y: x < y, Integer),
-         '>': (lambda x, y: x > y, Integer),
-         '<=': (lambda x, y: x <= y, Integer),
-         '>=': (lambda x, y: x >= y, Integer),
-         'contains': (lambda x, y: y in x, String),
-         'contained': (lambda x, y: x in y, String) ,
-         'startswith': (lambda x, y: x.startswith(y), String),
-         'initof': (lambda x, y: x.startswith(y), String),
+funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, Integer),
+         '>': (lambda x, y: x is not None and y is not None and x > y, Integer),
+         '<=': (lambda x, y: x is not None and y is not None and x <= y, Integer),
+         '>=': (lambda x, y: x is not None and y is not None and x >= y, Integer),
+         'contains': (lambda x, y: x is not None and y is not None and y in x, String),
+         'contained': (lambda x, y: x is not None and y is not None and x in y, String) ,
+         'startswith': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
+         'initof': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
         }
+
 
 name_types = {Course: 'Course',
               Lecturer: 'Lecturer',
@@ -177,6 +178,8 @@ class Predicate(object):
             self.ltype = Course
             self.rtype = Lecturer
             self.is_db_join = True
+            return
+            
         if pred[:4] == 'rev_':
             self.pred = pred = pred[4:]
             self.is_rev = True
@@ -188,6 +191,11 @@ class Predicate(object):
             else:
                 self.rtype = Course
                 self.ltype = type(attr.type)
+                if pred == 'lecturer':
+                    assert not self.is_rev
+                    self.ltype = Lecturer
+                    self.rtype = Course
+
                 
             self.is_attr = True
         else:
