@@ -15,8 +15,11 @@ MS = u"\u05d2\u05d1'"
 PROF = u'\u05e4\u05e8\u05d5\u05e4'
 PROFQ = u"\u05e4\u05e8\u05d5\u05e4'"
 DR = u'\u05d3"\u05e8'
+GVERET = u'\u05d2\u05d1\u05e8\u05ea'
+
 honor_heb2en = {MR: 'Mr.',
                 MS: 'Ms.',
+                GVERET: 'Ms.',
                PROF: 'Prof',
                PROFQ: 'Prof',
                DR: 'Dr'}
@@ -48,7 +51,7 @@ for row in r:
         cell = cell.replace('&quot;', '"')
         cell = cell.replace('-', ' ')
     lecturer_name = unicode(cell)
-	words = lecturer_name.split()
+    words = lecturer_name.split()
     honor = honor_heb2en.get(words[0])
     if honor is not None:
         lecturer_name = ' '.join(words[1:])
@@ -56,7 +59,7 @@ for row in r:
     print >> n_f, lecturer_name
     if lecturer is None:
         lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
-							name=unicode(row[alpg_title2idx['name']]),
+                            name=unicode(row[alpg_title2idx['name']]),
                            title=unicode(row[alpg_title2idx['title']]), 
                            phone=unicode(row[alpg_title2idx['phone']]),
                            fax=unicode(row[alpg_title2idx['fax']]), email=unicode(row[alpg_title2idx['email']]),
