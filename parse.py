@@ -3,7 +3,7 @@ from datetime import datetime
 import csv
 import nltk
 from db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
-               Course, Lecturer, Predicate)
+               Course, Lecturer, Predicate, Aggregation, aggregats)
 N = 2000
 MAX_JOIN = 10
 MAX_INTERSECT = 10
@@ -50,8 +50,8 @@ def extract_features(sent, exp, db):
 
 lexicon = {'who': ['lecturer'],
            'teach': ['lecturer', 'teach'],
-		   'taught': ['lecturer', 'teach'],
-		   'lecturer': ['lecturer', 'teach'],
+           'taught': ['lecturer', 'teach'],
+           'lecturer': ['lecturer', 'teach'],
            'when': ['day', 'start_time', 'semester'], # add full time
            'email': ['email'],
            'address': ['email'],
@@ -72,18 +72,23 @@ def update_lexicon(db):
     for k, opts in lexicon.items():
         parsed_opts = []
         for opt in opts:
-            parsed_opts.append(Predicate(opt))
-            if parsed_opts[-1].is_attr:
-                parsed_opts.append(Predicate('rev_'+opt))
+            aggregat_cls = aggregats.get(opt)
+            if aggregat_cls is not None:
+                parsed_opts.append(aggregat_cls())
+            else:
+                parsed_opts.append(Predicate(opt))
+                if parsed_opts[-1].is_attr:
+                    parsed_opts.append(Predicate('rev_'+opt))
         lexicon[k] = parsed_opts
     for course in db.courses.values():
         lexicon.setdefault(course.name,  []).append(Entity(course.id, Course))
         lexicon.setdefault(course.name.lower(),  []).append(Entity(course.id, Course))
     for lecturer in db.lecturers.values():
-		if lecturer.name: #not created when created courses table
-			lexicon.setdefault(lecturer.name,  []).append(Entity(lecturer.id, Lecturer))
-			lexicon.setdefault(lecturer.name.lower(),  []).append(Entity(lecturer.id, Lecturer))
-		
+        if lecturer.name: #not created when created courses table
+            lexicon.setdefault(lecturer.name,  []).append(Entity(lecturer.id, Lecturer))
+            lexicon.setdefault(lecturer.name.lower(),  []).append(Entity(lecturer.id, Lecturer))
+    
+        
     #TODO: add english name of lecturers
 
     
@@ -93,9 +98,9 @@ def parse_sent(sent, theta, db, k=10):
         if course.name in sent:
             sent = sent.replace(course.name, course.name.replace(' ', '-'))
     for lecturer in db.lecturers.values():
-		if lecturer.name: #not created when created courses table
-			if lecturer.name in sent:
-				sent = sent.replace(lecturer.name, lecturer.name.replace(' ', '-'))
+        if lecturer.name: #not created when created courses table
+            if lecturer.name in sent:
+                sent = sent.replace(lecturer.name, lecturer.name.replace(' ', '-'))
     sent = nltk.pos_tag(nltk.word_tokenize(sent))
     n = len(sent)
     span_exps = {}
@@ -107,7 +112,11 @@ def parse_sent(sent, theta, db, k=10):
                 for term in terms:
                     term.span = i, i
                     span_exps[i, i].append((term, None))
-            if isinstance(terms[0],  Predicate):
+            elif isinstance(terms[0],  Predicate):
+                for term in terms:
+                    term.span = i, i
+                    span_exps[i, i].append((term, None))
+            elif isinstance(terms[0],  Aggregation):
                 for term in terms:
                     term.span = i, i
                     span_exps[i, i].append((term, None))
@@ -128,15 +137,19 @@ def parse_sent(sent, theta, db, k=10):
                             if  isinstance(left,  Predicate):
                                 if isinstance(right,  Expression) and right.type == left.rtype and not (left.is_func and right.is_func):
                                     exp = Join(left, right, (i, j), (i, m))
-                                    exps.append((exp, extract_features(sent, exp, db)))
                             elif isinstance(left,  Expression):
                                 if isinstance(right,  Predicate) and left.type == right.rtype and not (left.is_func and right.is_func):
                                     exp = Join(right, left, (i, j), (m+1, j))
-                                    exps.append((exp, extract_features(sent, exp, db)))
                                 elif isinstance(right,  Expression):
                                     if right.type == left.type:
                                         exp = Intersect(right, left, (i, j))
-                                        exps.append((exp, extract_features(sent, exp, db)))
+                                elif isinstance(right,  Aggregation):
+                                    exp = type(right)(left)
+                            elif isinstance(left,  Aggregation):
+                                if isinstance(right,  Expression): 
+                                    exp = type(left)(right)
+                            exps.append((exp, extract_features(sent, exp, db)))
+                                    
             exps.sort(key=lambda (exp, feats): feats.dot(theta) if feats is not None else np.inf)
             span_exps[i, j] = exps[-k:]
     return span_exps[0, n-1]

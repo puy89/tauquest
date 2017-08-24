@@ -268,51 +268,65 @@ class Join(Expression):
             return {getattr(ent, pred) for ent in un.execute(db)}
         elif self.is_db_join:
             #TODO: other joins?
-            return {ent for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
+            return {c for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
 
     def __str__(self):
         return '({}.{})'.format(self.pred, self.un)
 
-class Count(Expression):
+
+
+class Aggregation(object):
+    def __init__(self, exp=None, span=[]):
+        self.exp = exp
+        self.span = span
+        self.is_func = False
+    
+
+class Count(Aggregation):
     #TODO: handle mutiplicity
-    def __init__(self, exp, span=[]):
-        self.exp = exp
-        self.span = span
     
     def execute(self, db):
-        return len(self.exp.execute(db))
+        return {len(self.exp.execute(db))}
+    
+    def __str__(self):
+        return 'count({})'.format(self.exp)
+    
 
-class Max(Expression):
-    def __init__(self, exp, span=[]):
-        self.exp = exp
-        self.span = span
+class Max(Aggregation):
     
     def execute(self, db):
-        return max(self.exp.execute(db))
+        return {max(self.exp.execute(db))}
 
-class Min(Expression):
-    def __init__(self, exp, span=[]):
-        self.exp = exp
-        self.span = span
+    def __str__(self):
+        return 'max{}'.format(self.exp)
+
+    
+    
+class Min(Aggregation):
     
     def execute(self, db):
-        return min(self.exp.execute(db))
+        return {min(self.exp.execute(db))}
+
+    def __str__(self):
+        return 'min({})'.format(self.exp)
 
     
-#TO DO: max min argmax?
+    
+aggregats = dict(min=Min,
+                 count=Count,
+                 max=Max)
+aggregat_p = re.compile('({})\\(.+\\)'.format('|'.join(aggregats)))
+#TO DO: argmin argmax?
     
 def parse_dcs(exp):
     in_parents = exp[0] == '(' and exp[-1] == ')'
-    #TO DO: with regexp
-    if exp.startswith('count'):
+    match = aggregat_p.match(exp)
+    if match:
+        assert match.start() == 0 and match.end() == len(exp) #only aggregation in the top
+        aggregat, = match.groups()
+        aggregat_cls = aggregats[aggregat]
         #TO DO? handle aggregation combine with not aggregation
-        return Count(parse_dcs(exp[len('count') +  1: -1]))
-    elif exp.startswith('min'):
-        #TO DO? handle aggregation combine with not aggregation
-        return Min(parse_dcs(exp[len('min') +  1: -1]))
-    elif exp.startswith('max'):
-        #TO DO? handle aggregation combine with not aggregation
-        return Max(parse_dcs(exp[len('max') +  1: -1]))
+        return aggregat_cls(parse_dcs(exp[len(aggregat) +  1: -1]))
     
     counter = 0
     for i, c in enumerate(exp):
