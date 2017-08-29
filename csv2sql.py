@@ -5,6 +5,9 @@ import csv
 import cPickle
 from db import Base, Course, Lecturer, engine, DBSession
 
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
  
 # Create all tables in the engine. This is equivalent to "Create Table"
