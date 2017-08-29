@@ -47,6 +47,7 @@ class Course(Base):
     id = Column(Integer, primary_key=True)
     name = Column(Unicode(250), nullable=False)
     hebrew_name = Column(Unicode(250), nullable=False)
+    hebrew_departure =  Column(Unicode(250), nullable=False)
     departure =  Column(Unicode(250), nullable=False)
     semester = Column(Integer)
     start_time = Column(Integer)

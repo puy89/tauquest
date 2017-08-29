@@ -125,6 +125,7 @@ def parse_sent(sent, theta, db, k=10):
             j = i+l
             exps = []                
             for m in xrange(i, j):
+                exp = None
                 if len(span_exps[m+1, j]) == 0:
                     for left, feats in span_exps[i, m]:
                         exps.append((left, feats))
@@ -137,18 +138,24 @@ def parse_sent(sent, theta, db, k=10):
                             if  isinstance(left,  Predicate):
                                 if isinstance(right,  Expression) and right.type == left.rtype and not (left.is_func and right.is_func):
                                     exp = Join(left, right, (i, j), (i, m))
+                                    exps.append((exp, extract_features(sent, exp, db)))
                             elif isinstance(left,  Expression):
                                 if isinstance(right,  Predicate) and left.type == right.rtype and not (left.is_func and right.is_func):
                                     exp = Join(right, left, (i, j), (m+1, j))
+                                    exps.append((exp, extract_features(sent, exp, db)))
                                 elif isinstance(right,  Expression):
                                     if right.type == left.type:
                                         exp = Intersect(right, left, (i, j))
+                                        exps.append((exp, extract_features(sent, exp, db)))
                                 elif isinstance(right,  Aggregation):
                                     exp = type(right)(left)
+                                    exps.append((exp, extract_features(sent, exp, db)))
                             elif isinstance(left,  Aggregation):
                                 if isinstance(right,  Expression): 
                                     exp = type(left)(right)
-                            exps.append((exp, extract_features(sent, exp, db)))
+                                    exps.append((exp, extract_features(sent, exp, db)))
+                #if exp is not None:
+                    
                                     
             exps.sort(key=lambda (exp, feats): feats.dot(theta) if feats is not None else np.inf)
             span_exps[i, j] = exps[-k:]
@@ -161,7 +168,7 @@ def adagrad(gradient, x0, step, iterations, PRINT_EVERY=10):
     x = x0
     expcost = None
     begin = datetime.now()
-    G = np.zeros_like(x0)
+    G = np.zeros_like(x0, float)
     for iter in xrange(0 + 1, iterations + 1):
         # Don't forget to apply the postprocessing after every iteration!
         # You might want to print the progress every few iterations.
@@ -187,7 +194,8 @@ def train(quests, ans, db, k=10, iters=None):
         ps = np.exp(feats.dot(theta))
         agree = [exp.execute(db) == ans[i] for exp in exps]
         assert any(agree)
-        qs = ps*agree/ps.dot(agree)
+        unnormed = ps*agree
+        qs = unnormed/unnormed.sum()
         return feats.T.dot(qs - ps)
     iters = iters or len(quests)
     return adagrad(gradient, np.zeros(N), 0.01, iters)

@@ -1,7 +1,8 @@
-import csv
 import os
 import sys
 import re
+import csv
+import cPickle
 from db import Base, Course, Lecturer, engine, DBSession
 
 site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
@@ -24,6 +25,8 @@ honor_heb2en = {MR: 'Mr.',
                PROFQ: 'Prof',
                DR: 'Dr'}
 
+departure_heb2en = cPickle.load(open('departure_he2en.pkl'))
+
 def_cols = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
 alph_cols = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'name', 'office']
 
@@ -40,7 +43,6 @@ def clear_name(s):
 s = DBSession()
 f = open('alphon.csv')
 r = csv.reader(f)
-n_f = open('names', 'w')
 lecturers = {}
 for row in r:
     cell = row[alpg_title2idx['hebrew_name']]
@@ -56,7 +58,6 @@ for row in r:
     if honor is not None:
         lecturer_name = ' '.join(words[1:])
     lecturer = lecturers.get(lecturer_name)
-    print >> n_f, lecturer_name
     if lecturer is None:
         lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
                             name=unicode(row[alpg_title2idx['name']]),
@@ -68,7 +69,6 @@ for row in r:
         s.add(lecturer)
 s.commit()
 f.close()
-n_f.close()
 
 f = open('courses.csv')
 r = csv.reader(f)
@@ -100,7 +100,8 @@ for row in r:
     course = Course(id=int(row[title2idx['course_id']].replace('-', '')),
                     name=row[title2idx['name']],
                     hebrew_name=unicode(row[title2idx['hebrew_name']]),
-                    departure=unicode(row[title2idx['departure']]),
+                    hebrew_departure=unicode(row[title2idx['departure']]),
+                    departure=unicode(departure_heb2en[unicode(row[title2idx['departure']])]),
                     semester=ord(row[title2idx['semester']][1])-0x90,
                     start_time=int(start_time),
                     end_time=int(end_time),
