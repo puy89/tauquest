@@ -1,6 +1,8 @@
 import numpy as np
 from datetime import datetime
 import csv
+from db.db import *
+
 import nltk
 from db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
                Course, Lecturer, Predicate, Aggregation, aggregats)
