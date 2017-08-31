@@ -13,6 +13,9 @@ with open('files/kind_he2en.pkl', 'rb') as f:
 with open('files/departure_he2en.pkl', 'rb') as f:
     departure_heb2en = cPickle.load(f)
 
+with open('files/building_he2en.pkl', 'rb') as f:
+    building_heb2en = cPickle.load(f)
+
 
 def parse_courses(lecturers):
     courses = list()
@@ -56,7 +59,7 @@ def parse_courses(lecturers):
                             end_time=int(end_time),
                             day=course_day,
                             place=unicode(course_row[title2idx['place']]),
-                            building=unicode(course_row[title2idx['building']]),
+                            building=unicode(building_heb2en[unicode(course_row[title2idx['building']])]),
                             kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
                             lecturer=lecturer)
 
