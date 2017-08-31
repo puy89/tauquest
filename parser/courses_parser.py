@@ -6,6 +6,9 @@ from honor import honor_heb2en
 courses_columns = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
 title2idx = {t: i  for i, t in enumerate(courses_columns)}
 
+with open('files/kind_he2en.pkl', 'rb') as f:
+    kind_heb2en = cPickle.load(f)
+
 with open('files/departure_he2en.pkl', 'rb') as f:
     departure_heb2en = cPickle.load(f)
 
@@ -52,7 +55,7 @@ def parse_courses(lecturers):
                             day=course_day,
                             place=unicode(course_row[title2idx['place']]),
                             building=unicode(course_row[title2idx['building']]),
-                            kind=unicode(course_row[title2idx['kind']]),
+                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
                             lecturer=lecturer)
 
             courses.append(course)
