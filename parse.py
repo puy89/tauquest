@@ -7,7 +7,11 @@ from db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, 
 N = 2000
 MAX_JOIN = 10
 MAX_INTERSECT = 10
-all_poss = np.array(['WP', 'VBZ', 'DT', 'JJ', 'NN', 'IN', 'DT', 'NN', 'IN', 'NNP', '.'])
+#TO DO: make sure this is all POS
+all_poss = np.array(['WP', 'VBZ', 'DT', 'JJ', 'NN', 'IN', 'DT', 'NNS', 'IN', 'NNP', 'CD', '.'])
+pos2idx = {pos: i  for i, pos in enumerate(all_poss)}
+pair_pos2idx = {pair_pos: i  for i, pair_pos in enumerate([(pos1, pos2) for pos1 in all_poss for pos2 in all_poss])}
+
 NUM_POS = len(all_poss)
 SHORT_LENS = np.arange(3)
 
@@ -17,20 +21,44 @@ def extract_features(sent, exp, db):
     counts = [0, 0]
     joins = []
     intersects = []
+    skips = []
     def dfs(node):
         if type(node) is Join:
-            joins.append((node.pred.span, node.un.span))
+            joins.append((node.pred.span[0], node.un.span[0]))
+            left_bound = min(node.pred.span[0], node.un.span[0]) + 1
+            right_bound = max(node.pred.span[0], node.un.span[0])
+            if right_bound > left_bound:
+                skips.append((left_bound, right_bound))
             dfs(node.un)
         if type(node) is Intersect:
-            intersects.append((node.exp1.span, node.exp1.span))
+            intersects.append((node.exp1.span[0], node.exp2.span[0]))
+            left_bound = min(node.exp1.span[0], node.exp2.span[0]) + 1
+            right_bound = max(node.exp1.span[0], node.exp2.span[0])
+            if right_bound > left_bound:
+                skips.append((left_bound, right_bound))
             dfs(node.exp1)
             dfs(node.exp2)
         #TODO bridge
     dfs(exp)
     ldcs =  str(exp)
+    #Rule features
+    #TODO bridge
     feats[i] =  len(joins); i += 1
     feats[i] =  len(intersects); i += 1
-    #TODO bridge
+    #skip POS
+    for left_bound, right_bound in skips:
+        for j in xrange(left_bound, right_bound):
+            feats[i + pos2idx[sent[j][1]]] = 1
+    i += NUM_POS
+    #composition POS    
+    for join in joins:
+        idx = pair_pos2idx[sent[join[0]][1], sent[join[1]][1]]
+        feats[i + idx] = 1
+    for intersect in intersects:
+        idx = pair_pos2idx[sent[intersect[0]][1], sent[intersect[1]][1]]
+        feats[i + idx] = 1
+    i += len(all_poss) ** 2
+    #Denotation features
     if exp.is_func:
         #stupid trick
         len_ents = 0.5
@@ -38,14 +66,7 @@ def extract_features(sent, exp, db):
         len_ents =  len(exp.execute(db))
     feats[i: i+len(SHORT_LENS)] =  SHORT_LENS == len_ents; i += len(SHORT_LENS)
     feats[i] = len_ents >= 3; i += 1
-    for join in joins:
-        for token in join:
-            feats[i: i + NUM_POS] = all_poss == sent[token[0]][1]; i += NUM_POS
-    i += (MAX_JOIN - len(joins))*NUM_POS
-    for intersect in intersects:
-        for token in intersect:
-            feats[i: i + NUM_POS] = all_poss == sent[token[0]][1]; i += NUM_POS
-    i += (MAX_JOIN - len(intersects))*NUM_POS
+
     return feats
 
 lexicon = {'who': ['lecturer'],
@@ -57,6 +78,7 @@ lexicon = {'who': ['lecturer'],
            'address': ['email'],
            'phone': ['phone'],
            'number': ['phone', 'fax', 'place', 'id'],
+		   'room': ['place'],
            'where': ['place', 'building', 'office'],
            'place': ['place'],#TODO: change place to room, add full adress
            'semester': ['semester'],
@@ -125,16 +147,11 @@ def parse_sent(sent, theta, db, k=10):
             j = i+l
             exps = []                
             for m in xrange(i, j):
-                exp = None
-                if len(span_exps[m+1, j]) == 0:
-                    for left, feats in span_exps[i, m]:
-                        exps.append((left, feats))
-                elif len(span_exps[i, m]) == 0:
-                    for right, feats in span_exps[m+1, j]:
-                        exps.append((right, feats))
-                else:
+                for h in xrange(m+1, j+1):
+                    if not (len(span_exps[i, m]) and len(span_exps[h, j])):
+                        continue
                     for left, _ in span_exps[i, m]:                         
-                        for right, _ in span_exps[m+1, j]:
+                        for right, _ in span_exps[h, j]:
                             if  isinstance(left,  Predicate):
                                 if isinstance(right,  Expression) and right.type == left.rtype and not (left.is_func and right.is_func):
                                     exp = Join(left, right, (i, j), (i, m))

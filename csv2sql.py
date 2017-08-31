@@ -8,6 +8,7 @@ from db import Base, Course, Lecturer, engine, DBSession
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+
 site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
  
 # Create all tables in the engine. This is equivalent to "Create Table"
@@ -29,6 +30,7 @@ honor_heb2en = {MR: 'Mr.',
                DR: 'Dr'}
 
 departure_heb2en = cPickle.load(open('departure_he2en.pkl'))
+kind_heb2en = cPickle.load(open('kind_he2en.pkl'))
 
 def_cols = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
 alph_cols = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'name', 'office']
@@ -111,7 +113,7 @@ for row in r:
                     day=day,
                     place=unicode(row[title2idx['place']]),
                     building=unicode(row[title2idx['building']]),
-                    kind=unicode(row[title2idx['kind']]),
+                    kind=unicode(kind_heb2en[unicode(row[title2idx['kind']])]),
                     lecturer=lecturer)
     s.add(course)
 s.commit()
