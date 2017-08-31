@@ -5,12 +5,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 
-engine = create_engine('sqlite:///courses.db')
+engine = create_engine('sqlite:///files//courses.db')
 Base = declarative_base()
 Base.metadata.bind = engine
 from sqlalchemy.orm import sessionmaker
-DBSession = sessionmaker()
-DBSession.bind = engine
+db_session = sessionmaker()
+db_session.bind = engine
 
 primitives_type = {Integer, Unicode, String}
 
@@ -357,7 +357,7 @@ def parse_dcs(exp):
     
 class DB(object):
     def __init__(self):
-        self.s = DBSession()
+        self.s = db_session()
         self.courses = {c.id: c for c in self.s.query(Course)}
         self.lecturers = {l.id: l for l in self.s.query(Lecturer)}
     

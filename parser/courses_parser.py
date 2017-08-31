@@ -6,13 +6,13 @@ from honor import honor_heb2en
 def_cols = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
 title2idx = {t: i  for i, t in enumerate(def_cols)}
 
-with open('departure_he2en.pkl', 'rb') as f:
+with open('files/departure_he2en.pkl', 'rb') as f:
     departure_heb2en = cPickle.load(f)
 
 def parse_courses(lecturers):
     courses = list()
 
-    with open('courses.csv') as courses_file:
+    with open('files/courses.csv') as courses_file:
         courses_rows = csv.reader(courses_file)
 
         for course_row in courses_rows:

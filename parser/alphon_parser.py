@@ -12,7 +12,7 @@ forbidden_chars = list(',.?-;"\'()!+') + ['&amp']
 
 def parse_alphon():
     lecturers = dict()
-    with open('alphon.csv') as alphon_file:
+    with open('files/alphon.csv') as alphon_file:
         alphon_rows = csv.reader(alphon_file)
         for alphon_row in alphon_rows:
             cell = alphon_row[alpg_title2idx['hebrew_name']]
