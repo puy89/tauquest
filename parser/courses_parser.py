@@ -3,8 +3,8 @@ import cPickle
 from db.db import Lecturer, Course
 from honor import honor_heb2en
 
-def_cols = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
-title2idx = {t: i  for i, t in enumerate(def_cols)}
+courses_columns = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
+title2idx = {t: i  for i, t in enumerate(courses_columns)}
 
 with open('files/departure_he2en.pkl', 'rb') as f:
     departure_heb2en = cPickle.load(f)
