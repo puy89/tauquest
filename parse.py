@@ -1,9 +1,12 @@
+import csv
+
 import numpy as np
 from datetime import datetime
-import csv
 import nltk
-from db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
+
+from db.db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
                Course, Lecturer, Predicate, Aggregation, aggregats)
+
 N = 2000
 MAX_JOIN = 10
 MAX_INTERSECT = 10

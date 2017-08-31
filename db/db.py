@@ -1,20 +1,16 @@
-import sqlalchemy
+import re
 
-
-import os
-import sys
 from sqlalchemy import Column, ForeignKey, Integer, Unicode, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
-import re
+
 engine = create_engine('sqlite:///courses.db')
 Base = declarative_base()
 Base.metadata.bind = engine
 from sqlalchemy.orm import sessionmaker
 DBSession = sessionmaker()
 DBSession.bind = engine
-from sqlalchemy.orm.attributes import InstrumentedAttribute as Attr
 
 primitives_type = {Integer, Unicode, String}
 
