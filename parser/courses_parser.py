@@ -1,16 +1,18 @@
 import csv
 import cPickle
-from db.db import Lecturer, Course
+from db.entities import Lecturer, Course
 from honor import honor_heb2en
 
-courses_columns = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building', 'kind', 'lecturer']
-title2idx = {t: i  for i, t in enumerate(courses_columns)}
+courses_columns = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building',
+                   'kind', 'lecturer']
+title2idx = {t: i for i, t in enumerate(courses_columns)}
 
 with open('files/kind_he2en.pkl', 'rb') as f:
     kind_heb2en = cPickle.load(f)
 
 with open('files/departure_he2en.pkl', 'rb') as f:
     departure_heb2en = cPickle.load(f)
+
 
 def parse_courses(lecturers):
     courses = list()
@@ -49,7 +51,7 @@ def parse_courses(lecturers):
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
                             hebrew_departure=unicode(course_row[title2idx['departure']]),
                             departure=unicode(departure_heb2en[unicode(course_row[title2idx['departure']])]),
-                            semester=ord(course_row[title2idx['semester']][1])-0x90,
+                            semester=ord(course_row[title2idx['semester']][1]) - 0x90,
                             start_time=int(start_time),
                             end_time=int(end_time),
                             day=course_day,

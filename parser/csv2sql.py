@@ -1,5 +1,5 @@
 import sys
-from db.db import db_session, engine, Base
+from db.entities import db_session, engine, Base
 from db.sqlite_executor import SqliteDB
 
 import courses_parser

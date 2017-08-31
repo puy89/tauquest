@@ -1,6 +1,6 @@
 import csv
 import re
-from db.db import Lecturer
+from db.entities import Lecturer
 from honor import honor_heb2en
 
 site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')

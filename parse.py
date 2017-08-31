@@ -4,8 +4,8 @@ import numpy as np
 from datetime import datetime
 import nltk
 
-from db.db import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
-               Course, Lecturer, Predicate, Aggregation, aggregats)
+from db.entities import (Expression, Entity, Join, Intersect, Courses, Lecturers, Count, Max, Min,
+               Course, Lecturer, Predicate, Aggregation, aggregats, db_session)
 
 N = 2000
 MAX_JOIN = 10
@@ -17,6 +17,15 @@ pair_pos2idx = {pair_pos: i  for i, pair_pos in enumerate([(pos1, pos2) for pos1
 
 NUM_POS = len(all_poss)
 SHORT_LENS = np.arange(3)
+
+
+
+class DB(object):
+    def __init__(self):
+        self.s = db_session()
+        self.courses = {c.id: c for c in self.s.query(Course)}
+        self.lecturers = {l.id: l for l in self.s.query(Lecturer)}
+
 
 def extract_features(sent, exp, db):
     feats = np.zeros(N)
