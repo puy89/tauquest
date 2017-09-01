@@ -1,5 +1,5 @@
 import sys
-from db.entities import db_session, engine, Base
+from db.db import db_instance
 from db.sqlite_executor import SqliteDB
 
 import courses_parser
@@ -11,8 +11,8 @@ sys.setdefaultencoding('utf8')
 
 def main():
     # create all db objects
-    session = db_session()
-    Base.metadata.create_all(engine)
+    session = db_instance.session
+    db_instance._base.metadata.create_all(db_instance.engine)
     sqlitedb = SqliteDB(session)
 
     lecturer_name_to_lecturer_dict = alphon_parser.parse_alphon()

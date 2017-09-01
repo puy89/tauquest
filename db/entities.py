@@ -1,21 +1,9 @@
-import re
-
-from sqlalchemy import Column, ForeignKey, Integer, Unicode, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, ForeignKey, Integer, Unicode
 from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
-
-engine = create_engine('sqlite:///files//courses.db')
-Base = declarative_base()
-Base.metadata.bind = engine
-from sqlalchemy.orm import sessionmaker
-db_session = sessionmaker()
-db_session.bind = engine
-
-primitives_type = {Integer, Unicode, String}
+from db import db_instance
 
 
-class Lecturer(Base):
+class Lecturer(db_instance._base):
     __tablename__ = 'lecturer'
     # Here we define columns for the table address.
     # Notice that each column is also a normal Python instance attribute.
@@ -36,7 +24,7 @@ class Lecturer(Base):
     def __repr__(self):
         return repr(self.__dict__)
     
-class Course(Base):
+class Course(db_instance._base):
     __tablename__ = 'course'
     # Here we define columns for the table person
     # Notice that each column is also a normal Python instance attribute.

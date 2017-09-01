@@ -49,6 +49,7 @@ def parse_courses(lecturers):
 
             elif lecturer.honor is None:
                 lecturer.honor = honor
+            building = building_heb2en[course_row[title2idx['building']]] if course_row[title2idx['building']] in building_heb2en.keys() else ""
             course = Course(id=int(course_row[title2idx['course_id']].replace('-', '')),
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
@@ -59,7 +60,7 @@ def parse_courses(lecturers):
                             end_time=int(end_time),
                             day=course_day,
                             place=unicode(course_row[title2idx['place']]),
-                            building=unicode(building_heb2en[unicode(course_row[title2idx['building']])]),
+                            building=unicode(building),
                             kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
                             lecturer=lecturer)
 

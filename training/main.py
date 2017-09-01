@@ -1,15 +1,16 @@
 import csv
 import numpy as np
-from db.entities import db_session, Course, Lecturer
+from db.db import db_instance
+from db.entities import Course, Lecturer
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
 
 
-class DB(object):
+class DBCache(object):
     def __init__(self):
-        self.s = db_session()
-        self.courses = {c.id: c for c in self.s.query(Course)}
-        self.lecturers = {l.id: l for l in self.s.query(Lecturer)}
+        self.session = db_instance.session
+        self.courses = {c.id: c for c in self.session.query(Course)}
+        self.lecturers = {l.id: l for l in self.session.query(Lecturer)}
 
 
 def load_dataset():
@@ -20,11 +21,11 @@ def load_dataset():
 
 
 def main():
-    db = DB()
+    db_cache = DBCache()
     lexicon = Lexicon()
-    lexicon.update_lexicon(db)
+    lexicon.update_lexicon(db_cache)
     questions, answers = load_dataset()
-    trainer = QuestionsAnswersTrainer(db)
+    trainer = QuestionsAnswersTrainer(db_cache)
 
     trainer.train(questions, answers, lexicon._lexicon)
 

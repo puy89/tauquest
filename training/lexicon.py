@@ -27,9 +27,9 @@ class Lexicon:
            }
 
     def update_lexicon(self, db):
-        for k, opts in self._lexicon.items():
+        for keys, values in self._lexicon.items():
             parsed_opts = []
-            for opt in opts:
+            for opt in values:
                 aggregat_cls = aggregats.get(opt)
                 if aggregat_cls is not None:
                     parsed_opts.append(aggregat_cls())
@@ -37,7 +37,7 @@ class Lexicon:
                     parsed_opts.append(Predicate(opt))
                     if parsed_opts[-1].is_attr:
                         parsed_opts.append(Predicate('rev_' + opt))
-            self._lexicon[k] = parsed_opts
+            self._lexicon[keys] = parsed_opts
         for course in db.courses.values():
             self._lexicon.setdefault(course.name, []).append(Entity(course.id, Course))
             self._lexicon.setdefault(course.name.lower(), []).append(Entity(course.id, Course))
