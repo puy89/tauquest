@@ -6,9 +6,10 @@ N = 2000
 
 
 class QuestionsAnswersTrainer:
-    def __init__(self, db):
+    def __init__(self, db, lexicon):
         self._db = db
-        self._questions_parser = QuestionsParser(db)
+        self._lexicon = lexicon
+        self._questions_parser = QuestionsParser(db, self._lexicon)
 
     def adagrad(self, gradient, x0, step, iterations, PRINT_EVERY=10):
         eps = 1e-06
@@ -33,13 +34,24 @@ class QuestionsAnswersTrainer:
 
         return x
 
+    def is_write_answer(self, exp, db, answer):
+        results = exp.execute(db)
+        for result in results:
+            # trick - we don't know the type of object that is returned
+            # and therefore we iterate over all its class fields
+            for property, value in vars(result).iteritems():
+                if value in answer:
+                    return True
+
+        return False
+
     def train(self, quests, ans, k=100, iters=None):
         def gradient(theta):
             i = np.random.randint(0, len(quests))
             exps, feats = np.array(self._questions_parser.parse_sent(quests[i], theta, k)).T
             feats = np.array([feat for feat in feats], float)
             ps = np.exp(feats.dot(theta))
-            agree = [exp.execute(self._db) == ans[i] for exp in exps]
+            agree = [self.is_write_answer(exp, self._db, ans[i]) for exp in exps]
             assert any(agree)
             unnormed = ps * agree
             qs = unnormed / unnormed.sum()
@@ -47,3 +59,8 @@ class QuestionsAnswersTrainer:
 
         iters = iters or len(quests)
         return self.adagrad(gradient, np.zeros(N), 0.01, iters)
+
+    def eval(self, question, theta, k=100):
+        exps, feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
+        feats = np.array([feat for feat in feats], float)
+        return [exp.execute(self._db) for exp in exps]

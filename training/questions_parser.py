@@ -7,12 +7,13 @@ from training.feature_extrector import FeatureExtractor
 
 class QuestionsParser:
 
-    def __init__(self, db):
+    def __init__(self, db, lexicon):
         self._db = db
+        self._lexicon = lexicon
         self._feature_extractor = FeatureExtractor(db)
 
 
-    def parse_sent(self, sent, theta, lexicon, k=10):
+    def parse_sent(self, sent, theta, k=10):
         # slowwwwwwwwww!!!!!
         for course in self._db.courses.values():
             if course.name in sent:
@@ -25,7 +26,7 @@ class QuestionsParser:
         n = len(sent)
         span_exps = {}
         for i, (w, pos) in enumerate(sent):
-            terms = lexicon.get(w.replace('-', ' '))
+            terms = self._lexicon.get(w.replace('-', ' '))
             span_exps[i, i] = []
             if terms is not None:
                 if isinstance(terms[0], Expression):

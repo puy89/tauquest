@@ -25,9 +25,13 @@ def main():
     lexicon = Lexicon()
     lexicon.update_lexicon(db_cache)
     questions, answers = load_dataset()
-    trainer = QuestionsAnswersTrainer(db_cache)
+    trainer = QuestionsAnswersTrainer(db_cache, lexicon._lexicon)
 
-    trainer.train(questions, answers, lexicon._lexicon)
+    theta = trainer.train(questions, answers)
+    print(theta)
+
+    print(trainer.eval(questions[0], theta))
+    print(trainer.eval(questions[1], theta))
 
 
 if __name__ == '__main__':
