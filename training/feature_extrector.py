@@ -44,7 +44,6 @@ class FeatureExtractor:
                 # TODO bridge
 
         dfs(exp)
-        ldcs = str(exp)
         # Rule features
         # TODO bridge
         feats[i] = len(joins);

@@ -5,25 +5,28 @@ from expression.expression import Predicate, Entity, aggregats
 class Lexicon:
 
     def __init__(self):
-        self._lexicon = {'who': ['lecturer'],
-           'teach': ['lecturer', 'teach'],
-           'taught': ['lecturer', 'teach'],
-           'lecturer': ['lecturer', 'teach'],
-           'when': ['day', 'start_time', 'semester'],  # add full time
-           'email': ['email'],
-           'address': ['email'],
-           'phone': ['phone'],
-           'number': ['phone', 'fax', 'place', 'id'],
-           'room': ['place'],
-           'where': ['place', 'building', 'office'],
-           'place': ['place'],  # TODO: change place to room, add full adress
-           'semester': ['semester'],
-           'kind': ['kind'],
-           'end': ['end_time'],
-           'start': ['start_time'],
-           'much': ['count'],
-           'after': ['>', '>='],
-           'before': ['<', '<='],
+        self._lexicon = \
+            {
+                'who': ['lecturer'],
+                'what': ['course', 'email'],
+                'teach': ['lecturer', 'teach'],
+                'taught': ['lecturer', 'teach'],
+                'lecturer': ['lecturer', 'teach'],
+                'when': ['day', 'start_time', 'semester'],  # add full time
+                'email': ['email'],
+                'address': ['email'],
+                'phone': ['phone'],
+                'number': ['phone', 'fax', 'place', 'id'],
+                'room': ['place'],
+                'where': ['place', 'building', 'office'],
+                'place': ['place'],  # TODO: change place to room, add full adress
+                'semester': ['semester'],
+                'kind': ['kind'],
+                'end': ['end_time'],
+                'start': ['start_time'],
+                'much': ['count'],
+                'after': ['>', '>='],
+                'before': ['<', '<='],
            }
 
     def update_lexicon(self, db):
@@ -48,3 +51,7 @@ class Lexicon:
 
 
                 # TODO: add english name of lecturers
+
+    @property
+    def lexicon(self):
+        return self._lexicon

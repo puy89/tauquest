@@ -68,7 +68,7 @@ class Entity(Expression):
             return {self.id}
 
     def __str__(self):
-        return '{}:{}'.format(name_types[self.type], self.id)
+        return u'{}:{}'.format(name_types[self.type], self.id)
 
 
 class Intersect(Expression):
@@ -107,6 +107,8 @@ class Predicate(object):
         self.is_func = False
         self.is_rev = False
         self.unknown = False
+        self.rtype = None
+        self.ltype = None
         if pred == 'teach':
             self.ltype = Course
             self.rtype = Lecturer
@@ -201,7 +203,7 @@ class Join(Expression):
             return {c for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
 
     def __str__(self):
-        return '({}.{})'.format(self.pred, self.un)
+        return u'({}.{})'.format(self.pred, self.un)
 
 
 class Aggregation(object):
@@ -281,5 +283,5 @@ def parse_dcs(exp):
     if exp == 'Courses':
         return Courses()
     if exp == 'Lectures':
-        return Lectures()
+        return Lecturers()
     return exp

@@ -20,18 +20,26 @@ def load_dataset():
         return questions, answers
 
 
+def pretty_print_result(question, result):
+    print(question)
+    for res in result:
+        for r in res:
+            print(u"\t{0}".format(r.id))
+
 def main():
     db_cache = DBCache()
     lexicon = Lexicon()
     lexicon.update_lexicon(db_cache)
     questions, answers = load_dataset()
-    trainer = QuestionsAnswersTrainer(db_cache, lexicon._lexicon)
+    trainer = QuestionsAnswersTrainer(db_cache, lexicon.lexicon)
 
     theta = trainer.train(questions, answers)
     print(theta)
 
-    print(trainer.eval(questions[0], theta))
-    print(trainer.eval(questions[1], theta))
+    pretty_print_result(questions[0], trainer.eval(questions[0], theta))
+    pretty_print_result(questions[1], trainer.eval(questions[1], theta))
+    pretty_print_result(questions[2], trainer.eval(questions[2], theta))
+
 
 
 if __name__ == '__main__':

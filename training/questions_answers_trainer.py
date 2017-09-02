@@ -34,7 +34,8 @@ class QuestionsAnswersTrainer:
 
         return x
 
-    def is_write_answer(self, exp, db, answer):
+    @staticmethod
+    def is_write_answer(exp, db, answer):
         results = exp.execute(db)
         for result in results:
             # trick - we don't know the type of object that is returned
