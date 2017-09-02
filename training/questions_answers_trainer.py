@@ -1,8 +1,8 @@
 from datetime import datetime
 import numpy as np
+from db.entities import Course, Lecturer
 from questions_parser import QuestionsParser
-
-N = 2000
+from training.feature_extrector import NUMBER_OF_FEATURES
 
 
 class QuestionsAnswersTrainer:
@@ -35,14 +35,17 @@ class QuestionsAnswersTrainer:
         return x
 
     @staticmethod
-    def is_write_answer(exp, db, answer):
+    def is_write_answer(exp, db, expected_answers):
         results = exp.execute(db)
-        for result in results:
-            # trick - we don't know the type of object that is returned
-            # and therefore we iterate over all its class fields
-            for property, value in vars(result).iteritems():
-                if value in answer:
-                    return True
+
+        if isinstance(next(iter(results)), Course):
+            return {course.name for course in results} == expected_answers
+
+        elif isinstance(next(iter(results)), Lecturer):
+            return {lecturer.name for lecturer in results} == expected_answers
+
+        else:
+            return {res for res in results} == expected_answers
 
         return False
 
@@ -59,9 +62,9 @@ class QuestionsAnswersTrainer:
             return feats.T.dot(qs - ps)
 
         iters = iters or len(quests)
-        return self.adagrad(gradient, np.zeros(N), 0.01, iters)
+        return self.adagrad(gradient, np.zeros(NUMBER_OF_FEATURES), 0.01, iters)
 
     def eval(self, question, theta, k=100):
         exps, feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
         feats = np.array([feat for feat in feats], float)
-        return [exp.execute(self._db) for exp in exps]
+        return exps[0].execute(self._db)
