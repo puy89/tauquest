@@ -1,7 +1,7 @@
 import numpy as np
 import nltk
 
-from expression.expression import (Expression, Join, Intersect, Predicate, Aggregation)
+from expression.expression import (Expression, Join, Intersect, Predicate, Aggregation, Entity, String)
 from training.feature_extrector import FeatureExtractor
 
 
@@ -41,6 +41,8 @@ class QuestionsParser:
                     for term in terms:
                         term.span = i, i
                         span_exps[i, i].append((term, None))
+            else:
+                span_exps[i, i].append((Entity(w, String, (i, i)), None))
         for l in xrange(1, n):
             for i in xrange(0, n - l):
                 j = i + l
