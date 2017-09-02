@@ -1,5 +1,6 @@
 import re
 from sqlalchemy import Integer, String, Unicode
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from db.entities import Course
 from db.entities import Lecturer
 
@@ -20,8 +21,10 @@ name_types = {Course: 'Course',
               Unicode: 'Unicode'}
 types_name = {v: k for k, v in name_types.items()}
 
+class DCS(object):
+    pass
 
-class Expression(object):
+class Expression(DCS):
     pass
 
 
@@ -43,6 +46,9 @@ class Entity(Expression):
 
     def __str__(self):
         return u'{}:{}'.format(name_types[self.type], self.id)
+    
+    def copy(self, span):
+        return Entity(self.id, self.type, span)    
 
 class Courses(Expression):
     def __init__(self, span=[]):
@@ -55,6 +61,10 @@ class Courses(Expression):
 
     def __str__(self):
         return 'Courses'
+    
+    def copy(self, span):
+        return Courses(self, span)    
+
 
 
 class Lecturers(Expression):
@@ -68,6 +78,9 @@ class Lecturers(Expression):
 
     def __str__(self):
         return 'Lecturers'
+    
+    def copy(self, span):
+        return Lecturers(self, span)    
 
 class Intersect(Expression):
     def __init__(self, exp1, exp2, span=[]):
@@ -76,34 +89,48 @@ class Intersect(Expression):
         self.type = exp1.type
         self.is_func = exp1.is_func and exp2.is_func
         self.span = span
+        self.saved_res = None
 
 
         # assert exp1.type == exp2.type
 
     def execute(self, db):
+        if self.saved_res:
+            return self.saved_res
         exp1 = self.exp1
         exp2 = self.exp2
         if exp1.is_func:
             if exp2.is_func:
                 return lambda x: exp1.execute(db)(x) and exp2.execute(db)(x)
             else:
-                return {ent for ent in exp2.execute(db) if exp1.execute(db)(ent)}
+                self.saved_res = {ent for ent in exp2.execute(db) if exp1.execute(db)(ent)}
+                return self.saved_res
         elif exp2.is_func:
-            return {ent for ent in exp1.execute(db) if exp2.execute(db)(ent)}
-        return exp1.execute(db) & exp2.execute(db)
+            self.saved_res = {ent for ent in exp1.execute(db) if exp2.execute(db)(ent)}
+            return self.saved_res
+        self.saved_res = exp1.execute(db) & exp2.execute(db)
+        return self.saved_res
 
     def __str__(self):
         return '({}&{})'.format(self.exp1, self.exp2)
+    
+    def copy(self, span):
+        return Intersect(self.exp1, self.exp2)    
+    
 
 
-class Predicate(object):
+class Predicate(DCS):
     def __init__(self, pred, span=()):
+        if type(pred) is not str:
+            self.unknown = True
+            return
         self.pred = pred
         self.span = span
         self.is_attr = False
         self.is_db_join = False
         self.is_func = False
         self.is_rev = False
+        self.is_lec = False
         self.unknown = False
         self.rtype = None
         self.ltype = None
@@ -112,7 +139,6 @@ class Predicate(object):
             self.rtype = Lecturer
             self.is_db_join = True
             return
-
         if pred[:4] == 'rev_':
             self.pred = pred = pred[4:]
             self.is_rev = True
@@ -131,6 +157,9 @@ class Predicate(object):
 
             self.is_attr = True
         else:
+            if pred[:4] == 'lec_':
+                self.pred = pred = pred[4:]
+                self.is_lec = True
             attr = vars(Lecturer).get(pred)
             if attr is not None:
                 if self.is_rev:
@@ -149,7 +178,10 @@ class Predicate(object):
                     self.unknown = True
 
     def __str__(self):
-        return '{}{}'.format('rev_' * self.is_rev, self.pred)
+        return '{}{}{}'.format('rev_' * self.is_rev, 'lec_' * self.is_lec, self.pred)
+    
+    def copy(self, span):
+        return Predicate(str(self), span)
 
 
 class Join(Expression):
@@ -170,8 +202,11 @@ class Join(Expression):
             self.type = self.un.type
         else:
             self.type = self.pred.ltype
+        self.saved_res = None
 
     def execute(self, db):
+        if self.saved_res:
+            return self.saved_res
         un = self.un
         pred = self.pred.pred
         if self.is_func:
@@ -186,29 +221,44 @@ class Join(Expression):
             ents = un.execute(db)
             if un.is_func:
                 if self.type == Course:
-                    return {ent for ent in db.courses.values() if ents(getattr(ent, pred))}
+                    self.saved_res = {ent for ent in db.courses.values() if ents(getattr(ent, pred))}
+                    return self.saved_res
                 if self.type == Lecturer:
-                    return {ent for ent in db.lecturers.values() if ents(getattr(ent, pred))}
+                    self.saved_res = {ent for ent in db.lecturers.values() if ents(getattr(ent, pred))}
+                    return self.saved_res
             else:
+                if not ents:
+                    return {}
                 if self.type == Course:
-                    return {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
+                    self.saved_res = {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
+                    return self.saved_res
                 if self.type == Lecturer:
-                    return {ent for ent in db.lecturers.values() if getattr(ent, pred) in ents}
+                    self.saved_res = {ent for ent in db.lecturers.values() if getattr(ent, pred) in ents}
+                    return self.saved_res
         elif self.is_attr:
-            return {getattr(ent, pred) for ent in un.execute(db)}
+            self.saved_res = {getattr(ent, pred) if ent is not None else None for ent in un.execute(db)}
+            return self.saved_res
         elif self.is_db_join:
             # TODO: other joins?
-            return {c for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
+            self.saved_res = {c for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
+            return self.saved_res
 
     def __str__(self):
         return u'({}.{})'.format(self.pred, self.un)
+    
+    def copy(self, span):
+        return Join(self.pred, self.un, span)    
 
 
-class Aggregation(object):
+
+class Aggregation(DCS):
     def __init__(self, exp=None, span=[]):
         self.exp = exp
         self.span = span
         self.is_func = False
+        
+    def copy(self, span):
+        return type(self)(self.exp, span)
 
 
 class Count(Aggregation):
@@ -283,3 +333,23 @@ def parse_dcs(exp):
     if exp == 'Lectures':
         return Lecturers()
     return exp
+
+type2preds = {}
+for func in funcs:
+    pred = Predicate(func)
+    type2preds.setdefault(pred.rtype, []).append(pred)
+for k, v in vars(Course).iteritems():
+    if type(v) is InstrumentedAttribute:
+        pred = Predicate(k)
+        type2preds.setdefault(pred.rtype, []).append(pred)
+        if k != 'lecturer':
+            pred = Predicate('rev_'+k)
+            type2preds.setdefault(pred.rtype, []).append(pred)
+    
+for k, v in vars(Lecturer).iteritems():
+    if type(v) is InstrumentedAttribute:
+        k = 'lec_' + k
+        pred = Predicate(k)
+        type2preds.setdefault(pred.rtype, []).append(pred)
+        pred = Predicate('rev_'+k)
+        type2preds.setdefault(pred.rtype, []).append(pred)

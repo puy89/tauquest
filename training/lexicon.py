@@ -1,5 +1,5 @@
 from db.entities import Course, Lecturer
-from expression.expression import Predicate, Entity, aggregats
+from expression.expression import Predicate, Entity, aggregats, Integer
 
 
 class Lexicon:
@@ -12,7 +12,8 @@ class Lexicon:
                 'teach': ['lecturer', 'teach'],
                 'taught': ['lecturer', 'teach'],
                 'lecturer': ['lecturer', 'teach'],
-                'when': ['day', 'start_time', 'semester'],  # add full time
+                'when': ['day', 'start_time', 'semester'],# add full time
+                'day': ['day'],
                 'email': ['email'],
                 'address': ['email'],
                 'phone': ['phone'],
@@ -24,7 +25,15 @@ class Lexicon:
                 'kind': ['kind'],
                 'end': ['end_time'],
                 'start': ['start_time'],
+                'begin': ['start_time'],
                 'much': ['count'],
+                'sunday': [0],
+                'monday': [1],
+                'tuesday': [2],
+                'wednesday': [3],
+                'thursday': [4],
+                'friday': [5],
+                'saturday': [6],
                 'after': ['>', '>='],
                 'before': ['<', '<='],
            }
@@ -37,9 +46,14 @@ class Lexicon:
                 if aggregat_cls is not None:
                     parsed_opts.append(aggregat_cls())
                 else:
-                    parsed_opts.append(Predicate(opt))
-                    if parsed_opts[-1].is_attr:
-                        parsed_opts.append(Predicate('rev_' + opt))
+                    pred = Predicate(opt)
+                    if not pred.unknown:
+                        parsed_opts.append(pred)
+                        if parsed_opts[-1].is_attr:
+                            parsed_opts.append(Predicate('rev_' + opt))
+                    elif type(opt) is int:
+                        parsed_opts.append(Entity(opt, Integer))                        
+
             self._lexicon[keys] = parsed_opts
         for course in db.courses.values():
             self._lexicon.setdefault(course.name, []).append(Entity(course.id, Course))
