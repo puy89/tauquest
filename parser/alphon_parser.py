@@ -2,14 +2,19 @@ import csv
 import re
 from db.entities import Lecturer
 from honor import honor_heb2en
+import cPickle
 
 site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
 alphon_columns = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'name', 'office']
 alpg_title2idx = {t: i for i, t in enumerate(alphon_columns)}
 
+
 forbidden_chars = list(',.?-;"\'()!+') + ['&amp']
 
+with open('files/names_he2en.pkl', 'rb') as f:
+    names_heb2en = cPickle.load(f)
 
+        
 def parse_alphon():
     lecturers = dict()
     with open('files/alphon.csv') as alphon_file:
@@ -30,7 +35,7 @@ def parse_alphon():
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
                 lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
-                                    name=unicode(alphon_row[alpg_title2idx['name']]),
+                                    name=unicode(names_heb2en.get(lecturer_name, '')),
                                     title=unicode(alphon_row[alpg_title2idx['title']]),
                                     phone=unicode(alphon_row[alpg_title2idx['phone']]),
                                     fax=unicode(alphon_row[alpg_title2idx['fax']]),

@@ -16,7 +16,10 @@ with open('files/departure_he2en.pkl', 'rb') as f:
 with open('files/building_he2en.pkl', 'rb') as f:
     building_heb2en = cPickle.load(f)
 
+with open('files/names_he2en.pkl', 'rb') as f:
+    names_heb2en = cPickle.load(f)
 
+	
 def parse_courses(lecturers):
     courses = list()
 
@@ -44,7 +47,8 @@ def parse_courses(lecturers):
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
                 if lecturer_name.rstrip():
-                    lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name, honor=honor)
+                    lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name, honor=honor,
+									   name=names_heb2en.get(lecturer_name, ''))
                     lecturers[lecturer_name] = lecturer
 
             elif lecturer.honor is None:
