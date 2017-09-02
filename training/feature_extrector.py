@@ -1,11 +1,14 @@
 import numpy as np
 from expression.expression import Join
 from expression.expression import Intersect
+from nltk.data import load
 
-N = 2000
+NUMBER_OF_FEATURES = 3000
+
+tagdict = load('help/tagsets/upenn_tagset.pickle')
 
 # TO DO: make sure this is all POS
-all_poss = np.array(['WP', 'VBZ', 'DT', 'JJ', 'NN', 'IN', 'DT', 'NNS', 'IN', 'NNP', 'CD', '.'])
+all_poss = np.array(tagdict.keys())
 pos2idx = {pos: i for i, pos in enumerate(all_poss)}
 pair_pos2idx = {pair_pos: i for i, pair_pos in enumerate([(pos1, pos2) for pos1 in all_poss for pos2 in all_poss])}
 
@@ -18,7 +21,7 @@ class FeatureExtractor:
         self._db = db
 
     def extract_features(self, sent, exp):
-        feats = np.zeros(N)
+        feats = np.zeros(NUMBER_OF_FEATURES)
         i = 0
         counts = [0, 0]
         joins = []

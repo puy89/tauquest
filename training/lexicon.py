@@ -8,7 +8,7 @@ class Lexicon:
         self._lexicon = \
             {
                 'who': ['lecturer'],
-                'what': ['course', 'email'],
+                'what': ['teach', 'email'],
                 'teach': ['lecturer', 'teach'],
                 'taught': ['lecturer', 'teach'],
                 'lecturer': ['lecturer', 'teach'],
