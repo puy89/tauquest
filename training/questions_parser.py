@@ -53,12 +53,12 @@ class QuestionsParser:
                             for right, _ in span_exps[h, j]:
                                 if isinstance(left, Predicate):
                                     if isinstance(right, Expression) and right.type == left.rtype and not (
-                                        left.is_func and right.is_func):
+                                                left.is_func and right.is_func):
                                         exp = Join(left, right, (i, j), (i, m))
                                         exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
                                 elif isinstance(left, Expression):
                                     if isinstance(right, Predicate) and left.type == right.rtype and not (
-                                        left.is_func and right.is_func):
+                                                left.is_func and right.is_func):
                                         exp = Join(right, left, (i, j), (m + 1, j))
                                         exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
                                     elif isinstance(right, Expression):

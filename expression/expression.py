@@ -25,6 +25,25 @@ class Expression(object):
     pass
 
 
+class Entity(Expression):
+    def __init__(self, id, type, span=[]):
+        self.id = id
+        self.type = type
+        self.is_func = False
+        self.span = span
+
+    def execute(self, db):
+        type = self.type
+        if type is Course:
+            return {db.courses[self.id]}
+        elif type is Lecturer:
+            return {db.lecturers[self.id]}
+        else:
+            return {self.id}
+
+    def __str__(self):
+        return u'{}:{}'.format(name_types[self.type], self.id)
+
 class Courses(Expression):
     def __init__(self, span=[]):
         self.type = Course
@@ -49,27 +68,6 @@ class Lecturers(Expression):
 
     def __str__(self):
         return 'Lecturers'
-
-
-class Entity(Expression):
-    def __init__(self, id, type, span=[]):
-        self.id = id
-        self.type = type
-        self.is_func = False
-        self.span = span
-
-    def execute(self, db):
-        type = self.type
-        if type is Course:
-            return {db.courses[self.id]}
-        elif type is Lecturer:
-            return {db.lecturers[self.id]}
-        else:
-            return {self.id}
-
-    def __str__(self):
-        return u'{}:{}'.format(name_types[self.type], self.id)
-
 
 class Intersect(Expression):
     def __init__(self, exp1, exp2, span=[]):

@@ -46,6 +46,7 @@ def main():
     pretty_print_result(questions[1], trainer.eval(questions[1], theta))
     pretty_print_result(questions[2], trainer.eval(questions[2], theta))
     pretty_print_result(questions[3], trainer.eval(questions[3], theta))
+    pretty_print_result(questions[4], trainer.eval(questions[4], theta))
 
 
 if __name__ == '__main__':
