@@ -12,6 +12,8 @@ class Lexicon:
                 'teach': ['lecturer', 'teach'],
                 'taught': ['lecturer', 'teach'],
                 'lecturer': ['lecturer', 'teach'],
+                'department': ['department', 'faculty'],
+                'faculty': ['faculty', 'department'],
                 'when': ['day', 'start_time', 'semester'],# add full time
                 'day': ['day'],
                 'email': ['email'],
