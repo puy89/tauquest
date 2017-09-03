@@ -35,7 +35,7 @@ def parse_alphon():
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
                 lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
-                                    name=unicode(names_heb2en.get(lecturer_name, '')),
+                                    name=unicode(alphon_row[alpg_title2idx['name']]),
                                     title=unicode(alphon_row[alpg_title2idx['title']]),
                                     phone=unicode(alphon_row[alpg_title2idx['phone']]),
                                     fax=unicode(alphon_row[alpg_title2idx['fax']]),
