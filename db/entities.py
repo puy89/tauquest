@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Unicode
+from sqlalchemy import Column, ForeignKey, Integer, Unicode, String
 from sqlalchemy.orm import relationship
 from db import db_instance
 
@@ -28,11 +28,12 @@ class Course(db_instance._base):
     __tablename__ = 'course'
     # Here we define columns for the table person
     # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, primary_key=True)
+    id = Column(String, primary_key=True)
     name = Column(Unicode(250), nullable=False)
     hebrew_name = Column(Unicode(250), nullable=False)
-    hebrew_departure = Column(Unicode(250), nullable=False)
-    departure = Column(Unicode(250), nullable=False)
+    hebrew_department = Column(Unicode(250), nullable=False)
+    department = Column(Unicode(250), nullable=True)
+    faculty = Column(Unicode(250), nullable=False)
     semester = Column(Integer)
     start_time = Column(Integer)
     end_time = Column(Integer)

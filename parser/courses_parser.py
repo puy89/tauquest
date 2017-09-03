@@ -3,15 +3,15 @@ import cPickle
 from db.entities import Lecturer, Course
 from honor import honor_heb2en
 
-courses_columns = ['hebrew_name', 'name', 'course_id', 'departure', 'semester', 'time', 'day', 'place', 'building',
+courses_columns = ['hebrew_name', 'name', 'course_id', 'department', 'semester', 'time', 'day', 'place', 'building',
                    'kind', 'lecturer']
 title2idx = {t: i for i, t in enumerate(courses_columns)}
 
 with open('files/kind_he2en.pkl', 'rb') as f:
     kind_heb2en = cPickle.load(f)
 
-with open('files/departure_he2en.pkl', 'rb') as f:
-    departure_heb2en = cPickle.load(f)
+with open('files/department_he2en.pkl', 'rb') as f:
+    department_heb2en = cPickle.load(f)
 
 with open('files/building_he2en.pkl', 'rb') as f:
     building_heb2en = cPickle.load(f)
@@ -54,12 +54,14 @@ def parse_courses(lecturers):
             elif lecturer.honor is None:
                 lecturer.honor = honor
             building = building_heb2en.get(unicode(course_row[title2idx['building']]), '')
-            course = Course(id=int(course_row[title2idx['course_id']].replace('-', '')),
+            faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
+            course = Course(id=course_row[title2idx['course_id']],
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
-                            hebrew_departure=unicode(course_row[title2idx['departure']]),
-                            departure=unicode(departure_heb2en[unicode(course_row[title2idx['departure']])]),
-                            semester=ord(course_row[title2idx['semester']][1]) - 0x90,
+                            hebrew_department=unicode(course_row[title2idx['department']]),
+                            faculty=unicode(faculty),
+                            department=department and unicode(department),
+                            semester=1+ord(course_row[title2idx['semester']][1]) - 0x90,
                             start_time=int(start_time),
                             end_time=int(end_time),
                             day=course_day,
