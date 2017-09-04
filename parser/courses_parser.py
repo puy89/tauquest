@@ -38,7 +38,7 @@ def parse_courses(lecturers):
             else:
                 course_day = -1
 
-            words = unicode(course_row[title2idx['lecturer']].lstrip().rstrip().replace('-', ' ')).split(' ')
+            words = unicode(course_row[title2idx['lecturer']].lstrip().rstrip().split('#')[0].replace('-', ' ')).split(' ')
             honor = honor_heb2en.get(words[0])
             if honor is None:
                 lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))

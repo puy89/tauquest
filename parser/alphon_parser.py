@@ -20,6 +20,7 @@ def parse_alphon():
     with open('files/alphon.csv') as alphon_file:
         alphon_rows = csv.reader(alphon_file)
         for alphon_row in alphon_rows:
+            site = None
             cell = alphon_row[alpg_title2idx['hebrew_name']]
             match = site_pattern.findall(cell)
             if match:
@@ -35,6 +36,7 @@ def parse_alphon():
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
                 lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
+                                    site=site,
                                     name=unicode(alphon_row[alpg_title2idx['name']]),
                                     title=unicode(alphon_row[alpg_title2idx['title']]),
                                     phone=unicode(alphon_row[alpg_title2idx['phone']]),

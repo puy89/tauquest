@@ -9,6 +9,7 @@ class Lecturer(db_instance._base):
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Unicode, primary_key=True)
     name = Column(Unicode(250))
+    site = Column(String(250), nullable=True)
     hebrew_name = Column(Unicode(250))
     email = Column(Unicode(250))
     office = Column(Unicode(250))
