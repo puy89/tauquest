@@ -14,6 +14,13 @@ forbidden_chars = list(',.?-;"\'()!+') + ['&amp']
 with open('files/names_he2en.pkl', 'rb') as f:
     names_heb2en = cPickle.load(f)
 
+with open('files/site2office.pkl', 'rb') as f:
+    site2office = cPickle.load(f)
+
+with open('files/building_he2en.pkl', 'rb') as f:
+    building_heb2en = cPickle.load(f)
+
+    
         
 def parse_alphon():
     lecturers = dict()
@@ -21,6 +28,8 @@ def parse_alphon():
         alphon_rows = csv.reader(alphon_file)
         for alphon_row in alphon_rows:
             site = None
+            office_building = None
+            office = None
             cell = alphon_row[alpg_title2idx['hebrew_name']]
             match = site_pattern.findall(cell)
             if match:
@@ -28,6 +37,10 @@ def parse_alphon():
                 cell = cell.replace('&#039;', '')
                 cell = cell.replace('&quot;', '"')
                 cell = cell.replace('-', ' ')
+                office_building, office = site2office.get(site, (None, None))
+                if office_building is not None:
+                    office_building = building_heb2en[office_building]
+                
             lecturer_name = unicode(cell)
             words = lecturer_name.split()
             honor = honor_heb2en.get(words[0])
@@ -42,7 +55,9 @@ def parse_alphon():
                                     phone=unicode(alphon_row[alpg_title2idx['phone']]),
                                     fax=unicode(alphon_row[alpg_title2idx['fax']]),
                                     email=unicode(alphon_row[alpg_title2idx['email']]),
-                                    honor=honor)
+                                    honor=honor,
+                                    office_building=office_building,
+                                    office=office)
                 lecturers[lecturer_name] = lecturer
 
     return lecturers
