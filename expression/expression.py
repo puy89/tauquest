@@ -4,10 +4,16 @@ from sqlalchemy.orm.attributes import InstrumentedAttribute
 from db.entities import Course
 from db.entities import Lecturer
 
+
+
 funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, Integer),
          '>': (lambda x, y: x is not None and y is not None and x > y, Integer),
          '<=': (lambda x, y: x is not None and y is not None and x <= y, Integer),
          '>=': (lambda x, y: x is not None and y is not None and x >= y, Integer),
+         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, Course),
+         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, Course),#symmteric?
+         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or
+                                                                                            x.start_time <= y.start_time < x.end_time) , Course),
          'contains': (lambda x, y: x is not None and y is not None and y in x, String),
          'contained': (lambda x, y: x is not None and y is not None and x in y, String),
          'startswith': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
@@ -134,6 +140,12 @@ class Predicate(DCS):
         self.unknown = False
         self.rtype = None
         self.ltype = None
+        func_type = funcs.get(pred)
+        if func_type is not None:
+            self.ltype = self.rtype = func_type[1]
+            self.func = func_type[0]
+            self.is_func = True
+            return
         if pred == 'teach':
             self.ltype = Course
             self.rtype = Lecturer
@@ -170,12 +182,7 @@ class Predicate(DCS):
                     self.ltype = type(attr.type)
                 self.is_attr = True
             else:
-                func = funcs.get(pred)
-                if func is not None:
-                    self.ltype = self.rtype = func[1]
-                    self.is_func = True
-                else:
-                    self.unknown = True
+                self.unknown = True
 
     def __str__(self):
         return '{}{}{}'.format('rev_' * self.is_rev, 'lec_' * self.is_lec, self.pred)
@@ -204,22 +211,38 @@ class Join(Expression):
             self.type = self.pred.ltype
         self.saved_res = None
 
-    def execute(self, db):
+    def execute(self, db):#what a fucked function!!!!
         if self.saved_res:
             return self.saved_res
         un = self.un
         pred = self.pred.pred
         if self.is_func:
-            if self.un.is_func:
-                pass
-                # TODO bom
-            else:
-                func = funcs[pred][0]
+            if self.type == Course:
+                func = self.pred.func
                 ents = un.execute(db)
-                return lambda x: any(func(x, ent) for ent in ents)
+                if not ents:
+                    return{}
+                self.saved_res = {c for c in db.courses.values()
+                        if any(func(c, ent) for ent in ents)}
+                return self.saved_res
+            elif self.type == Lecturer:
+                func = self.pred.func
+                ents = un.execute(db)
+                if not ents:
+                    return {}
+                self.saved_res =  {c for c in db.lecturers.values()
+                        if any(func(c, ent) for ent in ents)}
+                return self.saved_res
+            else:
+                if self.un.is_func:
+                    pass#estoric!
+                else:
+                    func = self.pred.func
+                    ents = un.execute(db)
+                    return lambda x: any(func(x, ent) for ent in ents)
         elif self.is_rev:
             ents = un.execute(db)
-            if un.is_func:
+            if un.is_func and un.type != Course and un.type != Lecturer:
                 if self.type == Course:
                     self.saved_res = {ent for ent in db.courses.values() if ents(getattr(ent, pred))}
                     return self.saved_res
@@ -227,8 +250,6 @@ class Join(Expression):
                     self.saved_res = {ent for ent in db.lecturers.values() if ents(getattr(ent, pred))}
                     return self.saved_res
             else:
-                if not ents:
-                    return {}
                 if self.type == Course:
                     self.saved_res = {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
                     return self.saved_res
