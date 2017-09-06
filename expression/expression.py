@@ -1,10 +1,12 @@
 import re
 from datetime import datetime
+from numpy import inf
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from db.entities import Course, Lecturer, CourseDB, LecturerDB
 
-
+future_time = datetime.now().replace(year=9999)
+past_time =  datetime.now().replace(year=1980)
 
 funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, Integer),
          '>': (lambda x, y: x is not None and y is not None and x > y, Integer),
@@ -270,7 +272,7 @@ class Join(Expression):
         return u'({}.{})'.format(self.pred, self.un)
     
     def copy(self, span):
-        return Join(self.pred, self.un, span)    
+        return Join(self.pred.copy(span), self.un.copy(span), span)    
 
 class LexEnt(Expression):
     def __init__(self, words, type, span=()):
@@ -306,17 +308,22 @@ class LexEnt(Expression):
         return 'lex_ent_{}({})'.format(self.type.__tablename__, ','.join(self.words))
 
 class Aggregation(DCS):
-    def __init__(self, exp=None, span=[]):
+    def __init__(self, exp=None, span=[], type=None):
         self.exp = exp
         self.span = span
         self.is_func = False
+        self.rtype = type
         
-    def copy(self, span):
-        return type(self)(self.exp, span)
+    def copy(self, span, exp=None):
+        return type(self)(exp or self.exp, span)
 
 
 class Count(Aggregation):
     # TODO: handle mutiplicity
+    def __init__(self, exp=None, span=[]):
+        Aggregation.__init__(self, exp, span, None)
+        
+        
 
     def execute(self, db):
         return {len(self.exp.execute(db))}
@@ -326,6 +333,9 @@ class Count(Aggregation):
 
 
 class Max(Aggregation):
+    def __init__(self, exp=None, span=[]):
+        Aggregation.__init__(self, exp, span, None)
+
     def execute(self, db):
         return {max(self.exp.execute(db))}
 
@@ -334,16 +344,87 @@ class Max(Aggregation):
 
 
 class Min(Aggregation):
+    def __init__(self, exp=None, span=[]):
+        Aggregation.__init__(self, exp, span, None)
+
     def execute(self, db):
         return {min(self.exp.execute(db))}
 
     def __str__(self):
-        return 'min({})'.format(self.exp)
+        return 'min{}'.format(self.exp)
+    
+    
+class Arg(Aggregation):
+    def __init__(self, exp=None, span=[], rtype=None, attr=None, ext_obj=None, func=None):
+        Aggregation.__init__(self, exp, span, rtype)
+        self.attr = attr
+        self.ext_obj = ext_obj
+        self.func = func
+    
+    
+    def execute(self, db):
+        return {self.func(self.exp.execute(db), key=lambda c: getattr(c, self.attr) or self.ext_obj)}
+
+    def __str__(self):
+        return 'arg{}_{}{}'.format(func.__name__, self.exp)
 
 
+class Earliest(Arg):
+    def __init__(self, exp=None, span=[]):
+        Arg.__init__(self, exp, span, Course, 'start_time', inf, min)
+    
+    def __str__(self):
+        return 'earliest{}'.format(self.exp)
+
+
+class Latest(Arg):
+    def __init__(self, exp=None, span=[]):
+        Arg.__init__(self, exp, span, Course, 'start_time', -inf, max)
+
+    def __str__(self):
+        return 'latest{}'.format(self.exp)
+
+class EarliestMoedA(Arg):
+    def __init__(self, exp=None, span=[]):
+        Arg.__init__(self, exp, span, Course, 'moed_a', future_time, min)
+    
+    def __str__(self):
+        return 'earliest_moeda{}'.format(self.exp)
+
+
+class LatestMoedA(Arg):
+    def __init__(self, exp=None, span=[]):
+        Arg.__init__(self, exp, span, Course, 'moed_a', past_time, max)
+
+    def __str__(self):
+        return 'latest_moeda{}'.format(self.exp)
+
+class EarliestMoedB(Arg):
+    def __init__(self, exp=None, span=[]):
+        Arg.__init__(self, exp, span, Course, 'moed_b', future_time, min)
+    
+    def __str__(self):
+        return 'earliest_moedb{}'.format(self.exp)
+
+
+class LatestMoedB(Arg):
+    def __init__(self, exp=None, span=[]):
+        Arg.__init__(self, exp, span, Course, 'moed_b', past_time, max)
+
+    def __str__(self):
+        return 'latest_moedb{}'.format(self.exp)
+
+    
+    
 aggregats = dict(min=Min,
                  count=Count,
-                 max=Max)
+                 max=Max,
+                 earliest=Earliest,
+                 latest=Latest,
+                 earliestmoeda=EarliestMoedA,
+                 latestmoeda=LatestMoedA,
+                 earliestmoedb=EarliestMoedB,
+                 latestmoedb=LatestMoedB)
 aggregat_p = re.compile('({})\\(.+\\)'.format('|'.join(aggregats)))
 
 

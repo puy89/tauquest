@@ -41,6 +41,8 @@ class DBCache(object):
         self.session = db_instance.session
         self.courses = {c.id: Course(c) for c in self.session.query(CourseDB)}
         self.lecturers = {l.id: Lecturer(l) for l in self.session.query(LecturerDB)}
+        self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
+        self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
         self.session.close()
         self.name2courses = {}
         self.courses_words_dict = create_words_dict(self.courses.values())

@@ -32,14 +32,14 @@ def parse_courses(lecturers):
         for course_row in courses_rows:
             course_time = course_row[title2idx['time']].split('-')
             if len(course_time) == 2:
-                end_time, start_time = course_time
+                end_time, start_time = map(int, course_time)
             else:
-                start_time = end_time = -1
+                start_time = end_time = None
 
             if len(course_row[title2idx['day']]):
-                course_day = ord(course_row[title2idx['day']][1]) - 0x90
+                course_day = 1 + ord(course_row[title2idx['day']][1]) - 0x90
             else:
-                course_day = -1
+                course_day = None
 
             words = unicode(course_row[title2idx['lecturer']].lstrip().rstrip().split('#')[0].replace('-', ' ')).split(' ')
             honor = honor_heb2en.get(words[0])
@@ -67,8 +67,8 @@ def parse_courses(lecturers):
                             faculty=unicode(faculty),
                             department=department and unicode(department),
                             semester=1+ord(course_row[title2idx['semester']][1]) - 0x90,
-                            start_time=int(start_time),
-                            end_time=int(end_time),
+                            start_time=start_time,
+                            end_time=end_time,
                             day=course_day,
                             place=unicode(course_row[title2idx['place']]),
                             building=unicode(building),

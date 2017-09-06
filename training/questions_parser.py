@@ -43,7 +43,7 @@ class QuestionsParser:
                     if isinstance(terms[0], DCS):
                         span_exps[i, i].append((term.copy((i, i)), None))
             else:
-                span_exps[i, i].append((Entity(w, Unicode, (i, i)), None))
+                #span_exps[i, i].append((Entity(w, Unicode, (i, i)), None))
                 exp = LexEnt([w], Course, (i, i) )
                 if 0 < len(exp.execute(self._db)) < 1000: 
                     span_exps[i, i].append((exp, None))
@@ -88,12 +88,13 @@ class QuestionsParser:
                                         if right.type == left.type:
                                             exp = Intersect(right, left, (i, j))
                                             exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
-                                    elif isinstance(right, Aggregation) and right.exp:
-                                        exp = type(right)(left)
-                                        exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
-                                elif isinstance(left, Aggregation) and left.exp:
-                                    if isinstance(right, Expression):
-                                        exp = type(left)(right)
+                                    elif isinstance(right, Aggregation) and right.exp is None:
+                                        if left.rtype is None or left.rtype == left.type:
+                                            exp = right.copy((i, j), left)
+                                            exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
+                                elif isinstance(left, Aggregation) and left.exp is None:
+                                    if isinstance(right, Expression) and (left.rtype is None or left.rtype == right.type):
+                                        exp = left.copy((i, j), right)
                                         exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
                                         # if exp is not None:
                 #bridge

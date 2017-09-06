@@ -1,5 +1,5 @@
 from db.entities import Course, Lecturer
-from expression.expression import Predicate, Entity, aggregats, Integer
+from expression.expression import Predicate, Join, Entity, aggregats, Integer, Unicode
 
 
 class Lexicon:
@@ -16,6 +16,8 @@ class Lexicon:
                 'faculty': ['faculty', 'department'],
                 'when': ['day', 'start_time', 'semester'],# add full time
                 'day': ['day'],
+                'in': ['start_time', 'place', 'semester', 'building', 'department', 'faculty'],
+                'of': ['start_time', 'place', 'semester', 'building', 'department', 'faculty'],
                 'email': ['email'],
                 'address': ['email'],
                 'phone': ['phone'],
@@ -28,6 +30,10 @@ class Lexicon:
                 'end': ['end_time'],
                 'start': ['start_time'],
                 'begin': ['start_time'],
+                'earliest': ['earliest', 'earliestmoeda', 'earliestmoedb'],
+                'first': ['earliest', 'earliestmoeda', 'earliestmoedb'],
+                'latest': ['latest', 'latestmoeda', 'latestmoedb'],
+                'last': ['latest', 'latestmoeda', 'latestmoedb'],
                 'test': ['moed_a', 'moed_b'],
                 'exam': ['moed_a', 'moed_b'],
                 'examination': ['moed_a', 'moed_b'],
@@ -58,19 +64,23 @@ class Lexicon:
                         if parsed_opts[-1].is_attr:
                             parsed_opts.append(Predicate('rev_' + opt))
                     elif type(opt) is int:
-                        parsed_opts.append(Entity(opt, Integer))                        
-
+                        ent = Entity(opt, Integer)
+                        parsed_opts.append(ent)
             self._lexicon[keys] = parsed_opts
-        for course in db.courses.values():
-            self._lexicon.setdefault(course.name, []).append(Entity(course.id, Course))
-            self._lexicon.setdefault(course.name.lower(), []).append(Entity(course.id, Course))
-        for lecturer in db.lecturers.values():
-            if lecturer.name:  # not created when created courses table
-                self._lexicon.setdefault(lecturer.name, []).append(Entity(lecturer.id, Lecturer))
-                self._lexicon.setdefault(lecturer.name.lower(), []).append(Entity(lecturer.id, Lecturer))
-
-
-                # TODO: add english name of lecturers
+        #primitive bridge
+        for honor in db.honors:
+            for lower in xrange(2):
+                if lower:
+                    honor = honor.lower()
+                self._lexicon[honor] = [Join('rev_honor', Entity(honor, Unicode))]
+                if honor[-1] != '.':
+                    self._lexicon[honor+'.'] = [Join('rev_honor', Entity(honor, Unicode))]
+                elif honor[-1] == '.':
+                    self._lexicon[honor[:-1]] = [Join('rev_honor', Entity(honor, Unicode))]
+                
+        for kind in db.kinds:
+            self._lexicon[kind] = [Join('rev_kind', Entity(kind, Unicode))]
+            
 
     @property
     def lexicon(self):

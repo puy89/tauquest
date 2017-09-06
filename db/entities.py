@@ -26,6 +26,7 @@ class LecturerDB(db_instance._base):
         return repr(self.__dict__)
 
 class Lecturer(object):
+    __tablename__ = 'lecturer'
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__) 
 
@@ -41,9 +42,9 @@ class CourseDB(db_instance._base):
     department = Column(Unicode(250), nullable=True)
     faculty = Column(Unicode(250), nullable=False)
     semester = Column(Integer)
-    start_time = Column(Integer)
-    end_time = Column(Integer)
-    day = Column(Integer)
+    start_time = Column(Integer, nullable=True)
+    end_time = Column(Integer, nullable=True)
+    day = Column(Integer, nullable=True)
     moed_a = Column(DateTime, nullable=True)
     moed_b = Column(DateTime, nullable=True)
     place = Column(Unicode(250), nullable=False)
@@ -59,6 +60,7 @@ class CourseDB(db_instance._base):
         return repr(self.__dict__)
 
 class Course(object):
+    __tablename__ = 'course'
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
         #multiplicy?

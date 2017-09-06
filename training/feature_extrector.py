@@ -21,6 +21,7 @@ class FeatureExtractor:
         self._db = db
 
     def extract_features(self, sent, exp):
+        print exp
         feats = np.zeros(NUMBER_OF_FEATURES)
         i = 0
         counts = [0, 0]
