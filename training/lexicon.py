@@ -28,6 +28,7 @@ class Lexicon:
                 'end': ['end_time'],
                 'start': ['start_time'],
                 'begin': ['start_time'],
+                'test': ['moed_a', 'moed_b'],
                 'much': ['count'],
                 'sunday': [1],
                 'monday': [2],

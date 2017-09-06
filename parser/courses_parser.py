@@ -19,6 +19,9 @@ with open('files/building_he2en.pkl', 'rb') as f:
 with open('files/names_he2en.pkl', 'rb') as f:
     names_heb2en = cPickle.load(f)
 
+with open('files/course2test.pkl', 'rb') as f:
+    course2test = cPickle.load(f)
+
 
 def parse_courses(lecturers):
     courses = list()
@@ -55,7 +58,9 @@ def parse_courses(lecturers):
                 lecturer.honor = honor
             building = building_heb2en.get(unicode(course_row[title2idx['building']]), '')
             faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
-            course = Course(id=course_row[title2idx['course_id']],
+            id = course_row[title2idx['course_id']]
+            moed_a, moed_b = course2test[id.replace('-', '')]
+            course = Course(id=id,
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
                             hebrew_department=unicode(course_row[title2idx['department']]),
@@ -68,6 +73,8 @@ def parse_courses(lecturers):
                             place=unicode(course_row[title2idx['place']]),
                             building=unicode(building),
                             kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
+                            moed_a=moed_a,
+                            moed_b=moed_b,
                             lecturer=lecturer)
 
             courses.append(course)

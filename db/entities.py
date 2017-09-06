@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Unicode, String
+from sqlalchemy import Column, ForeignKey, Integer, Unicode, String, DateTime
 from sqlalchemy.orm import relationship
 from db import db_instance
 
@@ -40,6 +40,8 @@ class Course(db_instance._base):
     start_time = Column(Integer)
     end_time = Column(Integer)
     day = Column(Integer)
+    moed_a = Column(DateTime, nullable=True)
+    moed_b = Column(DateTime, nullable=True)
     place = Column(Unicode(250), nullable=False)
     kind = Column(Unicode(250), nullable=False)
     building = Column(Unicode(250), nullable=False)
