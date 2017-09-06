@@ -60,7 +60,9 @@ class CourseDB(db_instance._base):
 
 class Course(object):
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__) 
+        self.__dict__ = dict(c.__dict__)
+        #multiplicy?
+        self.lecturer = Lecturer(c.lecturer) if c.lecturer is not None else None
 
     
 # funny trick
