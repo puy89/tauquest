@@ -6,13 +6,44 @@ from db.db import db_instance
 from db.entities import Course, Lecturer
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = lambda x: x
 
+def create_words_dict(ents):
+    cache = {}
+    def create_words_dict(ents, path=()):
+        if len({ent.name for ent in ents}) == 1:
+            return
+        d = {}
+        for ent in ents:
+            for word in ent.name.split():
+                if word not in path:
+                    k = tuple(sorted(path + (word,)))
+                    old_d = cache.get(k)
+                    if old_d is not None:
+                        d[word] = old_d
+                    else:
+                        d.setdefault(word, set()).add(ent)
+        for word, v in d.items():
+            if type(v) is set:
+                k = tuple(sorted(path + (word,)))
+                new_d = create_words_dict(v, path+(word,))
+                cache[k] = d[word] = v, new_d
+        return d
+    return create_words_dict(ents)
+
+    
 
 class DBCache(object):
     def __init__(self):
         self.session = db_instance.session
         self.courses = {c.id: c for c in self.session.query(Course)}
         self.lecturers = {l.id: l for l in self.session.query(Lecturer)}
+        self.name2courses = {}
+        self.courses_words_dict = create_words_dict(self.courses.values())
+        self.lecturers_words_dict = create_words_dict(self.lecturers.values())
 
 
 def load_dataset():

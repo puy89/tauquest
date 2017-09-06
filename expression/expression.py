@@ -270,7 +270,38 @@ class Join(Expression):
     def copy(self, span):
         return Join(self.pred, self.un, span)    
 
-
+class LexEnt(Expression):
+    def __init__(self, words, type, span=()):
+        self.words = words
+        self.span = span
+        self.type = type
+        self.is_func = False
+        self.saved_res = None
+    
+    def execute(self, db):
+        if self.saved_res:
+            return self.saved_res
+        if self.type == Course:
+            d = db.courses_words_dict
+        elif self.type == Lecturer:
+            d = db.lecturers_words_dict
+        else:
+            assert False, 'LexEnt is only Lecturer or Course'
+        for word in self.words:
+            v = d.get(word)
+            if v is None:
+                self.saved_res = set()
+                return self.saved_res
+            s, d = v
+            if not d:
+                self.saved_res = s
+                return self.saved_res
+        #d can be set or dict
+        self.saved_res = s
+        return self.saved_res
+    
+    def __str__(self):
+        return 'lex_ent({})'.format(','.join(self.words))
 
 class Aggregation(DCS):
     def __init__(self, exp=None, span=[]):
