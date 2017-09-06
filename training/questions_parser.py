@@ -31,15 +31,6 @@ class QuestionsParser:
 
 
     def parse_sent(self, sent, theta, k=10):
-        # slowwwwwwwwww!!!!!
-        
-        for course in self._db.courses.values():
-            if course.name in sent:
-                sent = sent.replace(course.name, course.name.replace(' ', '-'))
-        for lecturer in self._db.lecturers.values():
-            if lecturer.name:  # not created when created courses table
-                if lecturer.name in sent:
-                    sent = sent.replace(lecturer.name, lecturer.name.replace(' ', '-'))
         sent = nltk.pos_tag(nltk.word_tokenize(sent))
         words = np.array(sent)[:, 0]
         n = len(sent)
@@ -61,7 +52,7 @@ class QuestionsParser:
                     span_exps[i, i].append((exp, None))
                 
                 
-        for l in tqdm(xrange(1, n)):
+        for l in xrange(1, n):
             self._db.l = l
             for i in xrange(0, n - l):
                 j = i + l
@@ -72,7 +63,7 @@ class QuestionsParser:
                 if 0 < len(exp.execute(self._db)) < 1000: #1000 is a lot!!!!
                     span_exps[i, j] = [(exp, None)]
         #after for: clear short span contained in probably good names?
-        for l in tqdm(xrange(1, n)):
+        for l in xrange(1, n):
             self._db.l = l
             for i in xrange(0, n - l):
                 j = i + l

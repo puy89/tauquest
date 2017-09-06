@@ -1,8 +1,8 @@
 import re
+from datetime import datetime
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from db.entities import Course
-from db.entities import Lecturer
+from db.entities import Course, Lecturer, CourseDB, LecturerDB
 
 
 
@@ -10,10 +10,13 @@ funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, Integer),
          '>': (lambda x, y: x is not None and y is not None and x > y, Integer),
          '<=': (lambda x, y: x is not None and y is not None and x <= y, Integer),
          '>=': (lambda x, y: x is not None and y is not None and x >= y, Integer),
+         'date_after': (lambda x, y: x is not None and y is not None and x < y, datetime),
+         'date_before': (lambda x, y: x is not None and y is not None and x > y, datetime),
+         'date_aftereq': (lambda x, y: x is not None and y is not None and x <= y, datetime),
+         'date_beforeq': (lambda x, y: x is not None and y is not None and x >= y, datetime),
          'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, Course),
          'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, Course),#symmteric?
-         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or
-                                                                                            x.start_time <= y.start_time < x.end_time) , Course),
+         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or                                                                                   x.start_time <= y.start_time < x.end_time) , Course),
          'contains': (lambda x, y: x is not None and y is not None and y in x, String),
          'contained': (lambda x, y: x is not None and y is not None and x in y, String),
          'startswith': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
@@ -122,7 +125,6 @@ class Intersect(Expression):
     
     def copy(self, span):
         return Intersect(self.exp1, self.exp2)    
-    
 
 
 class Predicate(DCS):
@@ -154,7 +156,7 @@ class Predicate(DCS):
         if pred[:4] == 'rev_':
             self.pred = pred = pred[4:]
             self.is_rev = True
-        attr = vars(Course).get(pred)
+        attr = vars(CourseDB).get(pred)
         if attr is not None:
             if self.is_rev:
                 self.rtype = type(attr.type)
@@ -172,7 +174,7 @@ class Predicate(DCS):
             if pred[:4] == 'lec_':
                 self.pred = pred = pred[4:]
                 self.is_lec = True
-            attr = vars(Lecturer).get(pred)
+            attr = vars(LecturerDB).get(pred)
             if attr is not None:
                 if self.is_rev:
                     self.rtype = type(attr.type)
@@ -390,7 +392,7 @@ type2preds = {}
 for func in funcs:
     pred = Predicate(func)
     type2preds.setdefault(pred.rtype, []).append(pred)
-for k, v in vars(Course).iteritems():
+for k, v in vars(CourseDB).iteritems():
     if type(v) is InstrumentedAttribute:
         pred = Predicate(k)
         type2preds.setdefault(pred.rtype, []).append(pred)
@@ -398,7 +400,7 @@ for k, v in vars(Course).iteritems():
             pred = Predicate('rev_'+k)
             type2preds.setdefault(pred.rtype, []).append(pred)
     
-for k, v in vars(Lecturer).iteritems():
+for k, v in vars(LecturerDB).iteritems():
     if type(v) is InstrumentedAttribute:
         k = 'lec_' + k
         pred = Predicate(k)

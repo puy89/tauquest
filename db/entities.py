@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from db import db_instance
 
 
-class Lecturer(db_instance._base):
+class LecturerDB(db_instance._base):
     __tablename__ = 'lecturer'
     # Here we define columns for the table address.
     # Notice that each column is also a normal Python instance attribute.
@@ -25,8 +25,12 @@ class Lecturer(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
+class Lecturer(object):
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__) 
 
-class Course(db_instance._base):
+    
+class CourseDB(db_instance._base):
     __tablename__ = 'course'
     # Here we define columns for the table person
     # Notice that each column is also a normal Python instance attribute.
@@ -46,7 +50,7 @@ class Course(db_instance._base):
     kind = Column(Unicode(250), nullable=False)
     building = Column(Unicode(250), nullable=False)
     lecturer_id = Column(Unicode, ForeignKey('lecturer.id'))
-    lecturer = relationship(Lecturer)
+    lecturer = relationship(LecturerDB)
 
     def __str__(self):
         return str(self.__dict__)
@@ -54,6 +58,10 @@ class Course(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
+class Course(object):
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__) 
 
+    
 # funny trick
-Course.lecturer.type = Lecturer
+CourseDB.lecturer.type = Lecturer

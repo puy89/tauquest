@@ -1,6 +1,6 @@
 import csv
 import re
-from db.entities import Lecturer
+from db.entities import LecturerDB
 from honor import honor_heb2en
 import cPickle
 
@@ -48,7 +48,7 @@ def parse_alphon():
                 lecturer_name = ' '.join(words[1:])
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
-                lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name,
+                lecturer = LecturerDB(id=lecturer_name, hebrew_name=lecturer_name,
                                     site=site,
                                     name=unicode(alphon_row[alpg_title2idx['name']]),
                                     title=unicode(alphon_row[alpg_title2idx['title']]),

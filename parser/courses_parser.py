@@ -1,6 +1,6 @@
 import csv
 import cPickle
-from db.entities import Lecturer, Course
+from db.entities import LecturerDB, CourseDB
 from honor import honor_heb2en
 
 courses_columns = ['hebrew_name', 'name', 'course_id', 'department', 'semester', 'time', 'day', 'place', 'building',
@@ -50,7 +50,7 @@ def parse_courses(lecturers):
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
                 if lecturer_name.rstrip():
-                    lecturer = Lecturer(id=lecturer_name, hebrew_name=lecturer_name, honor=honor,
+                    lecturer = LecturerDB(id=lecturer_name, hebrew_name=lecturer_name, honor=honor,
                                         name=names_heb2en.get(lecturer_name, ''))
                     lecturers[lecturer_name] = lecturer
 
@@ -60,7 +60,7 @@ def parse_courses(lecturers):
             faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
             id = course_row[title2idx['course_id']]
             moed_a, moed_b = course2test[id.replace('-', '')]
-            course = Course(id=id,
+            course = CourseDB(id=id,
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
                             hebrew_department=unicode(course_row[title2idx['department']]),
