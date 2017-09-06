@@ -54,10 +54,10 @@ class QuestionsParser:
             else:
                 span_exps[i, i].append((Entity(w, Unicode, (i, i)), None))
                 exp = LexEnt([w], Course, (i, i) )
-                if 0 < len(exp.execute(self._db)): 
+                if 0 < len(exp.execute(self._db)) < 1000: 
                     span_exps[i, i].append((exp, None))
                 exp = LexEnt([w], Lecturer, (i, i))
-                if 0 < len(exp.execute(self._db)): 
+                if 0 < len(exp.execute(self._db)) < 1000: 
                     span_exps[i, i].append((exp, None))
                 
                 

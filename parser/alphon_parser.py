@@ -59,5 +59,4 @@ def parse_alphon():
                                     office_building=office_building,
                                     office=office)
                 lecturers[lecturer_name] = lecturer
-
     return lecturers

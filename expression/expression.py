@@ -301,7 +301,7 @@ class LexEnt(Expression):
         return self.saved_res
     
     def __str__(self):
-        return 'lex_ent({})'.format(','.join(self.words))
+        return 'lex_ent_{}({})'.format(self.type.__tablename__, ','.join(self.words))
 
 class Aggregation(DCS):
     def __init__(self, exp=None, span=[]):
