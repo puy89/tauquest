@@ -8,7 +8,6 @@ site_pattern = re.compile('<a href="(.+?)">(.+?)</a>')
 alphon_columns = ['hebrew_name', 'title', 'phone', 'fax', 'email', 'name', 'office']
 alpg_title2idx = {t: i for i, t in enumerate(alphon_columns)}
 
-
 forbidden_chars = list(',.?-;"\'()!+') + ['&amp']
 
 with open('files/names_he2en.pkl', 'rb') as f:
@@ -20,8 +19,7 @@ with open('files/site2office.pkl', 'rb') as f:
 with open('files/building_he2en.pkl', 'rb') as f:
     building_heb2en = cPickle.load(f)
 
-    
-        
+
 def parse_alphon():
     lecturers = dict()
     with open('files/alphon.csv') as alphon_file:
@@ -40,7 +38,7 @@ def parse_alphon():
                 office_building, office = site2office.get(site, (None, None))
                 if office_building is not None:
                     office_building = building_heb2en[office_building]
-                
+
             lecturer_name = unicode(cell)
             words = lecturer_name.split()
             honor = honor_heb2en.get(words[0])
@@ -58,8 +56,12 @@ def parse_alphon():
                                     office_building=office_building,
                                     office=office)
 
-                phones= Phone(phone=unicode(alphon_row[alpg_title2idx['phone']]),
-                              lecturer_id=lecturer_name)
-                lecturer.phones.append(phones)
+                phones_string = unicode(alphon_row[alpg_title2idx['phone']])
+                phones = phones_string.replace('<div>', '').replace('</div>', ',').split(',')[:-1]
+                for phone_string in phones:
+                    phone = Phone(phone=phone_string,
+                                  lecturer_id=lecturer_name)
+
+                    lecturer.phones.append(phone)
                 lecturers[lecturer_name] = lecturer
     return lecturers

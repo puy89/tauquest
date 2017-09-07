@@ -16,6 +16,7 @@ class CourseToLecturer(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
+
 class Occurence(db_instance._base):
     __tablename__ = "occurence"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -58,6 +59,7 @@ class Phone(db_instance._base):
     phone = Column(Unicode(250), nullable=False)
     lecturer_id = Column(String, ForeignKey("lecturer.id"))
 
+
 class Lecturer(db_instance._base):
     __tablename__ = 'lecturer'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -78,7 +80,3 @@ class Lecturer(db_instance._base):
 
     def __repr__(self):
         return repr(self.__dict__)
-
-# # funny trick
-# CourseDB.lecturers.type = LecturerDB
-# LecturerDB.courses.type = CourseDB
