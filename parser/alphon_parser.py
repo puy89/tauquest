@@ -48,15 +48,16 @@ def parse_alphon():
                 lecturer_name = ' '.join(words[1:])
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
-                lecturer = LecturerDB(id=lecturer_name, hebrew_name=lecturer_name,
-                                    site=site,
-                                    name=unicode(alphon_row[alpg_title2idx['name']]),
-                                    title=unicode(alphon_row[alpg_title2idx['title']]),
-                                    phone=unicode(alphon_row[alpg_title2idx['phone']]),
-                                    fax=unicode(alphon_row[alpg_title2idx['fax']]),
-                                    email=unicode(alphon_row[alpg_title2idx['email']]),
-                                    honor=honor,
-                                    office_building=office_building,
-                                    office=office)
+                lecturer = LecturerDB(id=lecturer_name,
+                                      hebrew_name=lecturer_name,
+                                        site=site,
+                                        name=unicode(alphon_row[alpg_title2idx['name']]),
+                                        title=unicode(alphon_row[alpg_title2idx['title']]),
+                                        phone=unicode(alphon_row[alpg_title2idx['phone']]),
+                                        fax=unicode(alphon_row[alpg_title2idx['fax']]),
+                                        email=unicode(alphon_row[alpg_title2idx['email']]),
+                                        honor=honor,
+                                        office_building=office_building,
+                                        office=office)
                 lecturers[lecturer_name] = lecturer
     return lecturers

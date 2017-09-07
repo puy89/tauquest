@@ -1,6 +1,6 @@
 import csv
 import cPickle
-from db.entities import LecturerDB, CourseDB
+from db.entities import LecturerDB, CourseDB, CourseToLecturerMappingDB
 from honor import honor_heb2en
 
 courses_columns = ['hebrew_name', 'name', 'course_id', 'department', 'semester', 'time', 'day', 'place', 'building',
@@ -51,7 +51,7 @@ def parse_courses(lecturers):
             if lecturer is None:
                 if lecturer_name.rstrip():
                     lecturer = LecturerDB(id=lecturer_name, hebrew_name=lecturer_name, honor=honor,
-                                        name=names_heb2en.get(lecturer_name, ''))
+                                        name=names_heb2en.get(lecturer_name, ''),courses=[])
                     lecturers[lecturer_name] = lecturer
 
             elif lecturer.honor is None:
@@ -74,8 +74,12 @@ def parse_courses(lecturers):
                             building=unicode(building),
                             kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
                             moed_a=moed_a,
-                            moed_b=moed_b,
-                            lecturer=lecturer)
+                            moed_b=moed_b)
 
-            courses.append(course)
+            if lecturer is not None:
+                course_to_lecturer_mapping = CourseToLecturerMappingDB()
+                course_to_lecturer_mapping.lecturer = lecturer
+                course_to_lecturer_mapping.course = course
+                course.lecturers.append(course_to_lecturer_mapping)
+                courses.append(course)
     return courses, lecturers

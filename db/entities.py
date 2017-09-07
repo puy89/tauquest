@@ -1,7 +1,20 @@
-from sqlalchemy import Column, ForeignKey, Integer, Unicode, String, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, Unicode, String, DateTime, Table, Enum
 from sqlalchemy.orm import relationship
 from db import db_instance
 
+
+class CourseToLecturerMappingDB(db_instance._base):
+    __tablename__ = "course_to_lecturer"
+    course_id = Column(String, ForeignKey("course.id"), primary_key=True)
+    lecturer_id = Column(String, ForeignKey("lecturer.id"), primary_key=True)
+    course = relationship("db.entities.CourseDB", back_populates="lecturers")
+    lecturer = relationship("db.entities.LecturerDB", back_populates="courses")
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    def __repr__(self):
+        return repr(self.__dict__)
 
 class LecturerDB(db_instance._base):
     __tablename__ = 'lecturer'
@@ -18,6 +31,7 @@ class LecturerDB(db_instance._base):
     fax = Column(Unicode(250))
     title = Column(Unicode(250))
     honor = Column(Unicode(250))
+    courses = relationship("db.entities.CourseToLecturerMappingDB", back_populates="lecturer")
 
     def __str__(self):
         return str(self.__dict__)
@@ -25,10 +39,11 @@ class LecturerDB(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
+
 class PythonDBClass(object):
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
-        
+
     def __hash__(self):
         return hash(self.id)
 
@@ -36,13 +51,19 @@ class PythonDBClass(object):
         return self.id == other.id
 
 
+class CourseToLecturerMapping(PythonDBClass):
+    __tablename__ = 'course_to_lecturer'
+
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__)
+
 class Lecturer(PythonDBClass):
     __tablename__ = 'lecturer'
+
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
 
 
-    
 class CourseDB(db_instance._base):
     __tablename__ = 'course'
     # Here we define columns for the table person
@@ -62,8 +83,7 @@ class CourseDB(db_instance._base):
     place = Column(Unicode(250), nullable=False)
     kind = Column(Unicode(250), nullable=False)
     building = Column(Unicode(250), nullable=False)
-    lecturer_id = Column(Unicode, ForeignKey('lecturer.id'))
-    lecturer = relationship(LecturerDB)
+    lecturers = relationship("db.entities.CourseToLecturerMappingDB", back_populates="course")
 
     def __str__(self):
         return str(self.__dict__)
@@ -71,13 +91,15 @@ class CourseDB(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
+
 class Course(PythonDBClass):
     __tablename__ = 'course'
+
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
-        #multiplicy?
-        self.lecturer = Lecturer(c.lecturer) if c.lecturer is not None else None
+        # multiplicy?
+        # self.lecturers = Lecturer(c.lecturer) if c.lecturer is not None else None
 
-    
-# funny trick
-CourseDB.lecturer.type = Lecturer
+# # funny trick
+# CourseDB.lecturers.type = LecturerDB
+# LecturerDB.courses.type = CourseDB
