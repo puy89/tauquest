@@ -17,13 +17,19 @@ class CourseToLecturer(db_instance._base):
         return repr(self.__dict__)
 
 
+class MultiCourse(db_instance._base):
+    __tablename__ = "multi_course"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    multi_course_id = Column(String)
+    courses = relationship("Course")
+
 class Occurence(db_instance._base):
     __tablename__ = "occurence"
     id = Column(Integer, primary_key=True, autoincrement=True)
     start_time = Column(Integer, nullable=True)
     end_time = Column(Integer, nullable=True)
     day = Column(Integer, nullable=True)
-    course_id = Column(String, ForeignKey("course.id"))
+    course_id = Column(Integer, ForeignKey("course.id"))
 
 
 class Course(db_instance._base):
@@ -45,6 +51,7 @@ class Course(db_instance._base):
     kind = Column(Unicode(250), nullable=False)
     building = Column(Unicode(250), nullable=False)
     lecturers = relationship(CourseToLecturer, back_populates="course")
+    multi_course_id = Column(Integer, ForeignKey("multi_course.id"))
 
     def __str__(self):
         return str(self.__dict__)

@@ -1,7 +1,7 @@
 import csv
 import cPickle
 import random
-from db.entities import Lecturer, Course, CourseToLecturer, Occurence
+from db.entities import Lecturer, Course, CourseToLecturer, Occurence, MultiCourse
 from honor import honor_heb2en
 
 courses_columns = ['hebrew_name', 'name', 'course_id', 'department', 'semester', 'time', 'day', 'place', 'building',
@@ -26,7 +26,7 @@ with open('files/course2test.pkl', 'rb') as f:
 
 def parse_courses(lecturers):
     courses = list()
-
+    multi_courses = dict()
     with open('files/courses.csv') as courses_file:
         courses_rows = csv.reader(courses_file)
 
@@ -60,10 +60,11 @@ def parse_courses(lecturers):
                 lecturer.honor = honor
             building = building_heb2en.get(unicode(course_row[title2idx['building']]), '')
             faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
-            id = course_row[title2idx['course_id']]
-            moed_a, moed_b = course2test[id.replace('-', '')]
+            course_id = course_row[title2idx['course_id']]
+            moed_a, moed_b = course2test[course_id.replace('-', '')]
 
-            course = Course(course_id=id,
+
+            course = Course(course_id=course_id,
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
                             hebrew_department=unicode(course_row[title2idx['department']]),
@@ -82,11 +83,20 @@ def parse_courses(lecturers):
                                   end_time=end_time)
 
             course.occurences.append(occurence)
-            # course.occurences.append(occurence)
             if lecturer is not None:
                 course_to_lecturer_mapping = CourseToLecturer()
                 course_to_lecturer_mapping.lecturer = lecturer
                 course_to_lecturer_mapping.course = course
                 course.lecturers.append(course_to_lecturer_mapping)
                 courses.append(course)
-    return courses, lecturers
+
+            multi_course_id = course_id[:-3]
+            if multi_course_id in multi_courses.keys():
+                multi_course = multi_courses[multi_course_id]
+                multi_course.courses.append(course)
+            else:
+                multi_course = MultiCourse(multi_course_id=multi_course_id)
+                multi_course.courses.append(course)
+                multi_courses[multi_course_id] = multi_course
+
+    return multi_courses, courses, lecturers

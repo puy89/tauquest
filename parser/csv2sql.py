@@ -16,7 +16,7 @@ def main():
     sqlitedb = SqliteDB(session)
 
     lecturer_name_to_lecturer_dict = alphon_parser.parse_alphon()
-    courses, lecturer_name_to_lecturer_dict = courses_parser.parse_courses(lecturer_name_to_lecturer_dict)
+    multi_courses, courses, lecturer_name_to_lecturer_dict = courses_parser.parse_courses(lecturer_name_to_lecturer_dict)
 
     for lecturer_name, lecturer in lecturer_name_to_lecturer_dict.iteritems():
         sqlitedb.add_lecturer(lecturer)
@@ -24,6 +24,8 @@ def main():
     for course in courses:
         sqlitedb.add_course(course)
 
+    for multi_course in multi_courses.values():
+        sqlitedb.add_multi_course(multi_course)
     sqlitedb.commit()
 
 if __name__ == '__main__':
