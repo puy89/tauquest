@@ -37,7 +37,8 @@ class Course(db_instance._base):
     # Here we define columns for the table person
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Integer, primary_key=True, autoincrement=True)
-    course_id = Column(String)
+    multi_course_id = Column(Integer, ForeignKey("multi_course.id"))
+    course_group_id = Column(String)
     name = Column(Unicode(250), nullable=False)
     hebrew_name = Column(Unicode(250), nullable=False)
     hebrew_department = Column(Unicode(250), nullable=False)
@@ -51,7 +52,6 @@ class Course(db_instance._base):
     kind = Column(Unicode(250), nullable=False)
     building = Column(Unicode(250), nullable=False)
     lecturers = relationship(CourseToLecturer, back_populates="course")
-    multi_course_id = Column(Integer, ForeignKey("multi_course.id"))
 
     def __str__(self):
         return str(self.__dict__)

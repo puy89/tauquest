@@ -53,7 +53,7 @@ def parse_courses(lecturers):
             if lecturer is None:
                 if lecturer_name.rstrip():
                     lecturer = Lecturer(hebrew_name=lecturer_name, honor=honor,
-                                          name=names_heb2en.get(lecturer_name, ''), courses=[])
+                                        name=names_heb2en.get(lecturer_name, ''), courses=[])
                     lecturers[lecturer_name] = lecturer
 
             elif lecturer.honor is None:
@@ -63,8 +63,10 @@ def parse_courses(lecturers):
             course_id = course_row[title2idx['course_id']]
             moed_a, moed_b = course2test[course_id.replace('-', '')]
 
+            multi_course_id = course_id[:-3]
+            course_group_id = course_id[-2:]
 
-            course = Course(course_id=course_id,
+            course = Course(course_group_id=course_group_id,
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
                             hebrew_department=unicode(course_row[title2idx['department']]),
@@ -90,7 +92,6 @@ def parse_courses(lecturers):
                 course.lecturers.append(course_to_lecturer_mapping)
                 courses.append(course)
 
-            multi_course_id = course_id[:-3]
             if multi_course_id in multi_courses.keys():
                 multi_course = multi_courses[multi_course_id]
                 multi_course.courses.append(course)
