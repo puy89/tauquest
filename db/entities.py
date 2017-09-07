@@ -25,10 +25,22 @@ class LecturerDB(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
-class Lecturer(object):
+class PythonDBClass(object):
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__)
+        
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+
+class Lecturer(PythonDBClass):
     __tablename__ = 'lecturer'
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__) 
+        self.__dict__ = dict(c.__dict__)
+
 
     
 class CourseDB(db_instance._base):
@@ -59,7 +71,7 @@ class CourseDB(db_instance._base):
     def __repr__(self):
         return repr(self.__dict__)
 
-class Course(object):
+class Course(PythonDBClass):
     __tablename__ = 'course'
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)

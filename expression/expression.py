@@ -265,7 +265,8 @@ class Join(Expression):
             return self.saved_res
         elif self.is_db_join:
             # TODO: other joins?
-            self.saved_res = {c for ent in un.execute(db) for c in db.courses.values() if c.lecturer_id == ent.id}
+            ents = un.execute(db)
+            self.saved_res = {c for c in db.courses.values() if c.lecturer in ents}
             return self.saved_res
 
     def __str__(self):
