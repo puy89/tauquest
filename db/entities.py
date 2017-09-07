@@ -17,10 +17,18 @@ class CourseToLecturer(db_instance._base):
         return repr(self.__dict__)
 
 
+class Exam(db_instance._base):
+    __tablename__ = "exam"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    moed_a = Column(DateTime, nullable=True)
+    moed_b = Column(DateTime, nullable=True)
+    multi_course_id = Column(Integer, ForeignKey("multi_course.id"))
+
 class MultiCourse(db_instance._base):
     __tablename__ = "multi_course"
     id = Column(Integer, primary_key=True, autoincrement=True)
     multi_course_id = Column(String)
+    exam = relationship(Exam, uselist=False)
     courses = relationship("Course")
 
 class Occurence(db_instance._base):
@@ -32,7 +40,6 @@ class Occurence(db_instance._base):
     place = Column(Unicode(250), nullable=False)
     building = Column(Unicode(250), nullable=False)
     course_id = Column(Integer, ForeignKey("course.id"))
-
 
 class Course(db_instance._base):
     __tablename__ = 'course'
@@ -48,8 +55,6 @@ class Course(db_instance._base):
     faculty = Column(Unicode(250), nullable=False)
     occurences = relationship(Occurence)
     semester = Column(Integer)
-    moed_a = Column(DateTime, nullable=True)
-    moed_b = Column(DateTime, nullable=True)
     kind = Column(Unicode(250), nullable=False)
     lecturers = relationship(CourseToLecturer, back_populates="course")
 

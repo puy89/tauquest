@@ -1,7 +1,7 @@
 import csv
 import cPickle
 import random
-from db.entities import Lecturer, Course, CourseToLecturer, Occurence, MultiCourse
+from db.entities import Lecturer, Course, CourseToLecturer, Occurence, MultiCourse, Exam
 from honor import honor_heb2en
 
 courses_columns = ['hebrew_name', 'name', 'course_id', 'department', 'semester', 'time', 'day', 'place', 'building',
@@ -73,8 +73,6 @@ def parse_courses(lecturers):
                             department=department and unicode(department),
                             faculty=unicode(faculty),
                             semester=1 + ord(course_row[title2idx['semester']][1]) - 0x90,
-                            moed_a=moed_a,
-                            moed_b=moed_b,
                             kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])])
                             )
 
@@ -83,8 +81,8 @@ def parse_courses(lecturers):
                                   end_time=end_time,
                                   place=unicode(course_row[title2idx['place']]),
                                   building=unicode(building))
-
             course.occurences.append(occurence)
+
             if lecturer is not None:
                 course_to_lecturer_mapping = CourseToLecturer()
                 course_to_lecturer_mapping.lecturer = lecturer
@@ -92,12 +90,16 @@ def parse_courses(lecturers):
                 course.lecturers.append(course_to_lecturer_mapping)
                 courses.append(course)
 
+            multi_course = None
             if multi_course_id in multi_courses.keys():
                 multi_course = multi_courses[multi_course_id]
-                multi_course.courses.append(course)
             else:
                 multi_course = MultiCourse(multi_course_id=multi_course_id)
-                multi_course.courses.append(course)
                 multi_courses[multi_course_id] = multi_course
+
+            multi_course.courses.append(course)
+            exam = Exam(moed_a=moed_a,
+                        moed_b=moed_b)
+            multi_course.exam = exam
 
     return multi_courses, courses, lecturers
