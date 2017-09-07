@@ -1,6 +1,7 @@
 import csv
 import cPickle
-from db.entities import LecturerDB, CourseDB, CourseToLecturerMappingDB
+import random
+from db.entities import Lecturer, Course, CourseToLecturer, Occurence
 from honor import honor_heb2en
 
 courses_columns = ['hebrew_name', 'name', 'course_id', 'department', 'semester', 'time', 'day', 'place', 'building',
@@ -41,7 +42,8 @@ def parse_courses(lecturers):
             else:
                 course_day = None
 
-            words = unicode(course_row[title2idx['lecturer']].lstrip().rstrip().split('#')[0].replace('-', ' ')).split(' ')
+            words = unicode(course_row[title2idx['lecturer']].lstrip().rstrip().split('#')[0].replace('-', ' ')).split(
+                ' ')
             honor = honor_heb2en.get(words[0])
             if honor is None:
                 lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))
@@ -50,8 +52,8 @@ def parse_courses(lecturers):
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
                 if lecturer_name.rstrip():
-                    lecturer = LecturerDB(id=lecturer_name, hebrew_name=lecturer_name, honor=honor,
-                                        name=names_heb2en.get(lecturer_name, ''),courses=[])
+                    lecturer = Lecturer(hebrew_name=lecturer_name, honor=honor,
+                                          name=names_heb2en.get(lecturer_name, ''), courses=[])
                     lecturers[lecturer_name] = lecturer
 
             elif lecturer.honor is None:
@@ -60,24 +62,29 @@ def parse_courses(lecturers):
             faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
             id = course_row[title2idx['course_id']]
             moed_a, moed_b = course2test[id.replace('-', '')]
-            course = CourseDB(id=id,
+
+            course = Course(course_id=id,
                             name=course_row[title2idx['name']],
                             hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
                             hebrew_department=unicode(course_row[title2idx['department']]),
-                            faculty=unicode(faculty),
                             department=department and unicode(department),
-                            semester=1+ord(course_row[title2idx['semester']][1]) - 0x90,
-                            start_time=start_time,
-                            end_time=end_time,
-                            day=course_day,
-                            place=unicode(course_row[title2idx['place']]),
-                            building=unicode(building),
-                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
+                            faculty=unicode(faculty),
+                            semester=1 + ord(course_row[title2idx['semester']][1]) - 0x90,
                             moed_a=moed_a,
-                            moed_b=moed_b)
+                            moed_b=moed_b,
+                            place=unicode(course_row[title2idx['place']]),
+                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
+                            building=unicode(building)
+                            )
 
+            occurence = Occurence(day=course_day,
+                                  start_time=start_time,
+                                  end_time=end_time)
+
+            course.occurences.append(occurence)
+            # course.occurences.append(occurence)
             if lecturer is not None:
-                course_to_lecturer_mapping = CourseToLecturerMappingDB()
+                course_to_lecturer_mapping = CourseToLecturer()
                 course_to_lecturer_mapping.lecturer = lecturer
                 course_to_lecturer_mapping.course = course
                 course.lecturers.append(course_to_lecturer_mapping)

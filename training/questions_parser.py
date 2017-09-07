@@ -2,7 +2,7 @@ import numpy as np
 import nltk
 
 from expression.expression import (Expression, Join, Intersect, Predicate, Aggregation,
-                                   Course, Lecturer, LexEnt, Entity, Unicode, DCS, type2preds)
+                                   CourseDTO, LecturerDTO, LexEnt, Entity, Unicode, DCS, type2preds)
 from training.feature_extrector import FeatureExtractor
 try:
     from tqdm import tqdm
@@ -44,10 +44,10 @@ class QuestionsParser:
                         span_exps[i, i].append((term.copy((i, i)), None))
             else:
                 #span_exps[i, i].append((Entity(w, Unicode, (i, i)), None))
-                exp = LexEnt([w], Course, (i, i) )
+                exp = LexEnt([w], CourseDTO, (i, i) )
                 if 0 < len(exp.execute(self._db)) < 1000: 
                     span_exps[i, i].append((exp, None))
-                exp = LexEnt([w], Lecturer, (i, i))
+                exp = LexEnt([w], LecturerDTO, (i, i))
                 if 0 < len(exp.execute(self._db)) < 1000: 
                     span_exps[i, i].append((exp, None))
                 
@@ -56,10 +56,10 @@ class QuestionsParser:
             self._db.l = l
             for i in xrange(0, n - l):
                 j = i + l
-                exp = LexEnt(words[i: j+1], Course, (i, j))
+                exp = LexEnt(words[i: j+1], CourseDTO, (i, j))
                 if 0 < len(exp.execute(self._db)) < 1000: #1000 is a lot!!!!
                     span_exps[i, j] = [(exp, None)]
-                exp = LexEnt(words[i: j+1], Lecturer, (i, j))
+                exp = LexEnt(words[i: j+1], LecturerDTO, (i, j))
                 if 0 < len(exp.execute(self._db)) < 1000: #1000 is a lot!!!!
                     span_exps[i, j] = [(exp, None)]
         #after for: clear short span contained in probably good names?

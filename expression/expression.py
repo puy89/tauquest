@@ -3,7 +3,7 @@ from datetime import datetime
 from numpy import inf
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from db.entities import Course, Lecturer, CourseDB, LecturerDB
+from db.entities import CourseDTO, LecturerDTO, Course, Lecturer
 
 future_time = datetime.now().replace(year=9999)
 past_time =  datetime.now().replace(year=1980)
@@ -16,17 +16,17 @@ funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, Integer),
          'date_before': (lambda x, y: x is not None and y is not None and x > y, datetime),
          'date_aftereq': (lambda x, y: x is not None and y is not None and x <= y, datetime),
          'date_beforeq': (lambda x, y: x is not None and y is not None and x >= y, datetime),
-         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, Course),
-         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, Course),#symmteric?
-         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or                                                                                   x.start_time <= y.start_time < x.end_time) , Course),
+         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, CourseDTO),
+         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, CourseDTO),#symmteric?
+         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or                                                                                   x.start_time <= y.start_time < x.end_time) , CourseDTO),
          'contains': (lambda x, y: x is not None and y is not None and y in x, String),
          'contained': (lambda x, y: x is not None and y is not None and x in y, String),
          'startswith': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
          'initof': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
          }
 
-name_types = {Course: 'Course',
-              Lecturer: 'Lecturer',
+name_types = {CourseDTO: 'Course',
+              LecturerDTO: 'Lecturer',
               Integer: 'Integer',
               String: 'String',
               Unicode: 'Unicode'}
@@ -48,9 +48,9 @@ class Entity(Expression):
 
     def execute(self, db):
         type = self.type
-        if type is Course:
+        if type is CourseDTO:
             return {db.courses[self.id]}
-        elif type is Lecturer:
+        elif type is LecturerDTO:
             return {db.lecturers[self.id]}
         else:
             return {self.id}
@@ -63,7 +63,7 @@ class Entity(Expression):
 
 class Courses(Expression):
     def __init__(self, span=[]):
-        self.type = Course
+        self.type = CourseDTO
         self.is_func = False
         self.span = span
 
@@ -80,7 +80,7 @@ class Courses(Expression):
 
 class Lecturers(Expression):
     def __init__(self, span=[]):
-        self.type = Lecturer
+        self.type = LecturerDTO
         self.is_func = False
         self.span = span
 
@@ -151,38 +151,38 @@ class Predicate(DCS):
             self.is_func = True
             return
         if pred == 'teach':
-            self.ltype = Course
-            self.rtype = Lecturer
+            self.ltype = CourseDTO
+            self.rtype = LecturerDTO
             self.is_db_join = True
             return
         if pred[:4] == 'rev_':
             self.pred = pred = pred[4:]
             self.is_rev = True
-        attr = vars(CourseDB).get(pred)
+        attr = vars(Course).get(pred)
         if attr is not None:
             if self.is_rev:
                 self.rtype = type(attr.type)
-                self.ltype = Course
+                self.ltype = CourseDTO
             else:
-                self.rtype = Course
+                self.rtype = CourseDTO
                 self.ltype = type(attr.type)
                 if pred == 'lecturer':
                     assert not self.is_rev
-                    self.ltype = Lecturer
-                    self.rtype = Course
+                    self.ltype = LecturerDTO
+                    self.rtype = CourseDTO
 
             self.is_attr = True
         else:
             if pred[:4] == 'lec_':
                 self.pred = pred = pred[4:]
                 self.is_lec = True
-            attr = vars(LecturerDB).get(pred)
+            attr = vars(Lecturer).get(pred)
             if attr is not None:
                 if self.is_rev:
                     self.rtype = type(attr.type)
-                    self.ltype = Lecturer
+                    self.ltype = LecturerDTO
                 else:
-                    self.rtype = Lecturer
+                    self.rtype = LecturerDTO
                     self.ltype = type(attr.type)
                 self.is_attr = True
             else:
@@ -221,7 +221,7 @@ class Join(Expression):
         un = self.un
         pred = self.pred.pred
         if self.is_func:
-            if self.type == Course:
+            if self.type == CourseDTO:
                 func = self.pred.func
                 ents = un.execute(db)
                 if not ents:
@@ -229,7 +229,7 @@ class Join(Expression):
                 self.saved_res = {c for c in db.courses.values()
                         if any(func(c, ent) for ent in ents)}
                 return self.saved_res
-            elif self.type == Lecturer:
+            elif self.type == LecturerDTO:
                 func = self.pred.func
                 ents = un.execute(db)
                 if not ents:
@@ -246,18 +246,18 @@ class Join(Expression):
                     return lambda x: any(func(x, ent) for ent in ents)
         elif self.is_rev:
             ents = un.execute(db)
-            if un.is_func and un.type != Course and un.type != Lecturer:
-                if self.type == Course:
+            if un.is_func and un.type != CourseDTO and un.type != LecturerDTO:
+                if self.type == CourseDTO:
                     self.saved_res = {ent for ent in db.courses.values() if ents(getattr(ent, pred))}
                     return self.saved_res
-                if self.type == Lecturer:
+                if self.type == LecturerDTO:
                     self.saved_res = {ent for ent in db.lecturers.values() if ents(getattr(ent, pred))}
                     return self.saved_res
             else:
-                if self.type == Course:
+                if self.type == CourseDTO:
                     self.saved_res = {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
                     return self.saved_res
-                if self.type == Lecturer:
+                if self.type == LecturerDTO:
                     self.saved_res = {ent for ent in db.lecturers.values() if getattr(ent, pred) in ents}
                     return self.saved_res
         elif self.is_attr:
@@ -286,9 +286,9 @@ class LexEnt(Expression):
     def execute(self, db):
         if self.saved_res:
             return self.saved_res
-        if self.type == Course:
+        if self.type == CourseDTO:
             d = db.courses_words_dict
-        elif self.type == Lecturer:
+        elif self.type == LecturerDTO:
             d = db.lecturers_words_dict
         else:
             assert False, 'LexEnt is only Lecturer or Course'
@@ -372,7 +372,7 @@ class Arg(Aggregation):
 
 class Earliest(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, Course, 'start_time', inf, min)
+        Arg.__init__(self, exp, span, CourseDTO, 'start_time', inf, min)
     
     def __str__(self):
         return 'earliest{}'.format(self.exp)
@@ -380,14 +380,14 @@ class Earliest(Arg):
 
 class Latest(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, Course, 'start_time', -inf, max)
+        Arg.__init__(self, exp, span, CourseDTO, 'start_time', -inf, max)
 
     def __str__(self):
         return 'latest{}'.format(self.exp)
 
 class EarliestMoedA(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, Course, 'moed_a', future_time, min)
+        Arg.__init__(self, exp, span, CourseDTO, 'moed_a', future_time, min)
     
     def __str__(self):
         return 'earliest_moeda{}'.format(self.exp)
@@ -395,14 +395,14 @@ class EarliestMoedA(Arg):
 
 class LatestMoedA(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, Course, 'moed_a', past_time, max)
+        Arg.__init__(self, exp, span, CourseDTO, 'moed_a', past_time, max)
 
     def __str__(self):
         return 'latest_moeda{}'.format(self.exp)
 
 class EarliestMoedB(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, Course, 'moed_b', future_time, min)
+        Arg.__init__(self, exp, span, CourseDTO, 'moed_b', future_time, min)
     
     def __str__(self):
         return 'earliest_moedb{}'.format(self.exp)
@@ -410,7 +410,7 @@ class EarliestMoedB(Arg):
 
 class LatestMoedB(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, Course, 'moed_b', past_time, max)
+        Arg.__init__(self, exp, span, CourseDTO, 'moed_b', past_time, max)
 
     def __str__(self):
         return 'latest_moedb{}'.format(self.exp)
@@ -458,7 +458,7 @@ def parse_dcs(exp):
                 if exp[:i] == 'Integer':
                     return Entity(int(exp[i + 1:]), Integer)
                 elif exp[:i] == 'Course':
-                    return Entity(int(exp[i + 1:]), Course)
+                    return Entity(int(exp[i + 1:]), CourseDTO)
                 return Entity(exp[i + 1:], types_name[exp[:i]])
             in_parents = False
         assert counter >= 0
@@ -474,7 +474,7 @@ type2preds = {}
 for func in funcs:
     pred = Predicate(func)
     type2preds.setdefault(pred.rtype, []).append(pred)
-for k, v in vars(CourseDB).iteritems():
+for k, v in vars(Course).iteritems():
     if type(v) is InstrumentedAttribute:
         pred = Predicate(k)
         type2preds.setdefault(pred.rtype, []).append(pred)
@@ -482,7 +482,7 @@ for k, v in vars(CourseDB).iteritems():
             pred = Predicate('rev_'+k)
             type2preds.setdefault(pred.rtype, []).append(pred)
     
-for k, v in vars(LecturerDB).iteritems():
+for k, v in vars(Lecturer).iteritems():
     if type(v) is InstrumentedAttribute:
         k = 'lec_' + k
         pred = Predicate(k)

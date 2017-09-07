@@ -1,6 +1,6 @@
 import csv
 import re
-from db.entities import LecturerDB
+from db.entities import Lecturer, Phone
 from honor import honor_heb2en
 import cPickle
 
@@ -48,16 +48,18 @@ def parse_alphon():
                 lecturer_name = ' '.join(words[1:])
             lecturer = lecturers.get(lecturer_name)
             if lecturer is None:
-                lecturer = LecturerDB(id=lecturer_name,
-                                      hebrew_name=lecturer_name,
-                                        site=site,
-                                        name=unicode(alphon_row[alpg_title2idx['name']]),
-                                        title=unicode(alphon_row[alpg_title2idx['title']]),
-                                        phone=unicode(alphon_row[alpg_title2idx['phone']]),
-                                        fax=unicode(alphon_row[alpg_title2idx['fax']]),
-                                        email=unicode(alphon_row[alpg_title2idx['email']]),
-                                        honor=honor,
-                                        office_building=office_building,
-                                        office=office)
+                lecturer = Lecturer(hebrew_name=lecturer_name,
+                                    site=site,
+                                    name=unicode(alphon_row[alpg_title2idx['name']]),
+                                    title=unicode(alphon_row[alpg_title2idx['title']]),
+                                    fax=unicode(alphon_row[alpg_title2idx['fax']]),
+                                    email=unicode(alphon_row[alpg_title2idx['email']]),
+                                    honor=honor,
+                                    office_building=office_building,
+                                    office=office)
+
+                phones= Phone(phone=unicode(alphon_row[alpg_title2idx['phone']]),
+                              lecturer_id=lecturer_name)
+                lecturer.phones.append(phones)
                 lecturers[lecturer_name] = lecturer
     return lecturers

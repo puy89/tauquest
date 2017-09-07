@@ -1,4 +1,4 @@
-from db.entities import Course, Lecturer
+from db.entities import CourseDTO, LecturerDTO
 from expression.expression import Predicate, Join, Entity, aggregats, Integer, Unicode
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 import numpy as np
-from db.entities import Course, Lecturer
+from db.entities import CourseDTO, LecturerDTO
 from questions_parser import QuestionsParser
 from training.feature_extrector import NUMBER_OF_FEATURES
 
@@ -38,10 +38,10 @@ class QuestionsAnswersTrainer:
     def is_write_answer(exp, db, expected_answers):
         results = exp.execute(db)
 
-        if isinstance(next(iter(results)), Course):
+        if isinstance(next(iter(results)), CourseDTO):
             return {course.name for course in results} == expected_answers
 
-        elif isinstance(next(iter(results)), Lecturer):
+        elif isinstance(next(iter(results)), LecturerDTO):
             return {lecturer.name for lecturer in results} == expected_answers
 
         else:

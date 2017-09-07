@@ -3,7 +3,7 @@ import csv
 import numpy as np
 
 from db.db import db_instance
-from db.entities import CourseDB, LecturerDB, Course, Lecturer
+from db.entities import Course, Lecturer, CourseDTO, LecturerDTO
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
 try:
@@ -39,8 +39,8 @@ def create_words_dict(ents):
 class DBCache(object):
     def __init__(self):
         self.session = db_instance.session
-        self.courses = {c.id: Course(c) for c in self.session.query(CourseDB)}
-        self.lecturers = {l.id: Lecturer(l) for l in self.session.query(LecturerDB)}
+        self.courses = {c.id: CourseDTO(c) for c in self.session.query(Course)}
+        self.lecturers = {l.id: LecturerDTO(l) for l in self.session.query(Lecturer)}
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
         self.session.close()
@@ -59,9 +59,9 @@ def load_dataset():
 def pretty_print_result(question, result):
     print(question)
     for r in result:
-        if isinstance(r, Course):
+        if isinstance(r, CourseDTO):
             print(u"\t{0}".format(r.id))
-        elif isinstance(r, Lecturer):
+        elif isinstance(r, LecturerDTO):
             print(u"\t{0}".format(r.id))
         else:
             print(u"\t{0}".format(r))
