@@ -29,6 +29,8 @@ class Occurence(db_instance._base):
     start_time = Column(Integer, nullable=True)
     end_time = Column(Integer, nullable=True)
     day = Column(Integer, nullable=True)
+    place = Column(Unicode(250), nullable=False)
+    building = Column(Unicode(250), nullable=False)
     course_id = Column(Integer, ForeignKey("course.id"))
 
 
@@ -48,9 +50,7 @@ class Course(db_instance._base):
     semester = Column(Integer)
     moed_a = Column(DateTime, nullable=True)
     moed_b = Column(DateTime, nullable=True)
-    place = Column(Unicode(250), nullable=False)
     kind = Column(Unicode(250), nullable=False)
-    building = Column(Unicode(250), nullable=False)
     lecturers = relationship(CourseToLecturer, back_populates="course")
 
     def __str__(self):

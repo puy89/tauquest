@@ -75,14 +75,14 @@ def parse_courses(lecturers):
                             semester=1 + ord(course_row[title2idx['semester']][1]) - 0x90,
                             moed_a=moed_a,
                             moed_b=moed_b,
-                            place=unicode(course_row[title2idx['place']]),
-                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]),
-                            building=unicode(building)
+                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])])
                             )
 
             occurence = Occurence(day=course_day,
                                   start_time=start_time,
-                                  end_time=end_time)
+                                  end_time=end_time,
+                                  place=unicode(course_row[title2idx['place']]),
+                                  building=unicode(building))
 
             course.occurences.append(occurence)
             if lecturer is not None:
