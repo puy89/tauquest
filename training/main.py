@@ -12,14 +12,14 @@ try:
 except ImportError:
     tqdm = lambda x: x
 
-def create_words_dict(ents):
+def create_words_dict(ents, func=lambda x: x):
     cache = {}
     def create_words_dict(ents, path=()):
-        if len({ent.name for ent in ents}) == 1:
+        if len({func(ent) for ent in ents}) == 1:
             return
         d = {}
         for ent in ents:
-            for word in ent.name.split():
+            for word in func(ent).split():
                 if word not in path:
                     k = tuple(sorted(path + (word,)))
                     old_d = cache.get(k)
@@ -49,8 +49,19 @@ class DBCache(object):
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
         self.session.close()
         self.name2courses = {}
-        self.courses_words_dict = create_words_dict(self.multi_courses.values())
-        self.lecturers_words_dict = create_words_dict(self.lecturers.values())
+        self.courses_words_dict = create_words_dict(self.courses.values(), lambda x: x.name)
+        self.lecturers_words_dict = create_words_dict(self.lecturers.values(), lambda x: x.name)
+        self.buildings_words_dict = create_words_dict({l.office_building for l in self.lecturers.values() if l.office_building is not None} |
+                                                      {c.building for c in self.courses.values() if c.building is not None})
+        self.departements_words_dict = create_words_dict({c.department for c in self.courses.values() if c.department is not None})
+        self.faculties_words_dict = create_words_dict({c.faculty for c in self.courses.values() if c.faculty is not None})
+        self.type2words_dict = {Course: self.courses_words_dict,
+                                Lecturer: self.lecturers_words_dict,
+                               'building': self.buildings_words_dict,
+                               'department': self.departements_words_dict,
+                               'faculty': self.faculties_words_dict}
+        
+        
 
 
 def load_dataset():

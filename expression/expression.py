@@ -33,6 +33,24 @@ name_types = {CourseDTO: 'Course',
               Unicode: 'Unicode'}
 types_name = {v: k for k, v in name_types.items()}
 
+pred2type = dict(start_time='hour',
+                 end_time='hour',
+                 department='department',
+                 faculty='faculty',
+                 semsester='semsester',
+                 kind='kind',
+                 day='day',
+                 building='building',
+                 office_building='building',
+                 place='room',
+                 office='room',
+                 phone='phone',
+                 fax='phone',
+                 title='title',
+                 honor='honor',
+                 
+                )
+
 class DCS(object):
     pass
 
@@ -129,8 +147,10 @@ class Intersect(Expression):
     def copy(self, span):
         return Intersect(self.exp1, self.exp2)    
 
+class BasePredicate(DCS):
+    pass
 
-class Predicate(DCS):
+class Predicate(BasePredicate):
     def __init__(self, pred, span=()):
         if type(pred) is not str:
             self.unknown = True
@@ -277,37 +297,36 @@ class Join(Expression):
         return Join(self.pred.copy(span), self.un.copy(span), span)    
 
 class LexEnt(Expression):
-    def __init__(self, words, type, span=()):
+    def __init__(self, words, ent_type, span=()):
         self.words = words
         self.span = span
-        self.type = type
+        self.ent_type = ent_type
+        if ent_type == Course or ent_type == Lecturer:
+            self.type = ent_type
+        else:
+            self.type = Unicode
         self.is_func = False
         self.saved_res = None
     
     def execute(self, db):
         if self.saved_res:
             return self.saved_res
-        if self.type == CourseDTO:
-            d = db.courses_words_dict
-        elif self.type == LecturerDTO:
-            d = db.lecturers_words_dict
-        else:
-            assert False, 'LexEnt is only Lecturer or Course'
+        d = db.type2words_dict[self.ent_type]
         for word in self.words:
+            if not d:
+                self.saved_res = set()
+                return self.saved_res
             v = d.get(word)
             if v is None:
                 self.saved_res = set()
                 return self.saved_res
             s, d = v
-            if not d:
-                self.saved_res = s
-                return self.saved_res
         #d can be set or dict
         self.saved_res = s
         return self.saved_res
     
     def __str__(self):
-        return 'lex_ent_{}({})'.format(self.type.__tablename__, ','.join(self.words))
+        return 'lex_ent_{}({})'.format(self.ent_type if self.type == Unicode else self.ent_type.__tablename__, ','.join(self.words))
 
 class Aggregation(DCS):
     def __init__(self, exp=None, span=[], type=None):
