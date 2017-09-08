@@ -24,12 +24,21 @@ class Exam(db_instance._base):
     moed_b = Column(DateTime, nullable=True)
     multi_course_id = Column(Integer, ForeignKey("multi_course.id"))
 
+
 class MultiCourse(db_instance._base):
     __tablename__ = "multi_course"
     id = Column(Integer, primary_key=True, autoincrement=True)
     multi_course_id = Column(String)
-    exam = relationship(Exam, uselist=False)
-    courses = relationship("Course")
+    exam = relationship(Exam, uselist=False, lazy='joined')
+    courses = relationship("Course", lazy='joined')
+    name = Column(Unicode(250), nullable=False)
+    hebrew_name = Column(Unicode(250), nullable=False)
+    hebrew_department = Column(Unicode(250), nullable=False)
+    department = Column(Unicode(250), nullable=True)
+    faculty = Column(Unicode(250), nullable=False)
+    semester = Column(Integer)
+
+
 
 class Occurence(db_instance._base):
     __tablename__ = "occurence"
@@ -41,6 +50,7 @@ class Occurence(db_instance._base):
     building = Column(Unicode(250), nullable=False)
     course_id = Column(Integer, ForeignKey("course.id"))
 
+
 class Course(db_instance._base):
     __tablename__ = 'course'
     # Here we define columns for the table person
@@ -48,15 +58,9 @@ class Course(db_instance._base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     multi_course_id = Column(Integer, ForeignKey("multi_course.id"))
     course_group_id = Column(String)
-    name = Column(Unicode(250), nullable=False)
-    hebrew_name = Column(Unicode(250), nullable=False)
-    hebrew_department = Column(Unicode(250), nullable=False)
-    department = Column(Unicode(250), nullable=True)
-    faculty = Column(Unicode(250), nullable=False)
-    occurences = relationship(Occurence)
-    semester = Column(Integer)
     kind = Column(Unicode(250), nullable=False)
-    lecturers = relationship(CourseToLecturer, back_populates="course")
+    occurences = relationship(Occurence, lazy='joined')
+    lecturers = relationship(CourseToLecturer, back_populates="course", lazy='joined')
 
     def __str__(self):
         return str(self.__dict__)
@@ -81,14 +85,19 @@ class Lecturer(db_instance._base):
     email = Column(Unicode(250))
     office_building = Column(Unicode(250), nullable=True)
     office = Column(Unicode(250), nullable=True)
-    phones = relationship(Phone)
+    phones = relationship(Phone, lazy='joined')
     fax = Column(Unicode(250))
     title = Column(Unicode(250))
     honor = Column(Unicode(250))
-    courses = relationship(CourseToLecturer, back_populates="lecturer")
+    courses = relationship(CourseToLecturer, back_populates="lecturer", lazy='joined')
 
     def __str__(self):
         return str(self.__dict__)
 
     def __repr__(self):
         return repr(self.__dict__)
+
+Course.lecturers.type = list
+Course.occurences.type = list
+Lecturer.phones.type = list
+Lecturer.courses.type = list

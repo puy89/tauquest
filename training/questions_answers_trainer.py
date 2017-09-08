@@ -1,6 +1,6 @@
 from datetime import datetime
 import numpy as np
-from db.entities import CourseDTO, LecturerDTO
+from dto.dtos import CourseDTO, LecturerDTO
 from questions_parser import QuestionsParser
 from training.feature_extrector import NUMBER_OF_FEATURES
 

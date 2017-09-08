@@ -3,7 +3,8 @@ from datetime import datetime
 from numpy import inf
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from db.entities import CourseDTO, LecturerDTO, Course, Lecturer
+from db.entities import Course, Lecturer
+from dto.dtos import CourseDTO, LecturerDTO
 
 future_time = datetime.now().replace(year=9999)
 past_time =  datetime.now().replace(year=1980)

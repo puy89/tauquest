@@ -3,7 +3,8 @@ import csv
 import numpy as np
 
 from db.db import db_instance
-from db.entities import Course, Lecturer, CourseDTO, LecturerDTO
+from db.entities import Course, Lecturer, MultiCourse, CourseToLecturer
+from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
 try:
@@ -39,13 +40,16 @@ def create_words_dict(ents):
 class DBCache(object):
     def __init__(self):
         self.session = db_instance.session
-        self.courses = {c.id: CourseDTO(c) for c in self.session.query(Course)}
+        #self.course_to_lecturers = {(c.course_id, c.lecturer_id) : CourseToLecturerDTO(c) for c in self.session.query(CourseToLecturer)}
+        self.multi_courses = {c.id : MultiCourseDTO(c) for c in self.session.query(MultiCourse)}
+        self.courses = {c.id : CourseDTO(course) for c in self.multi_courses.values() for course in c.courses}
+        #self.courses = {c.id: CourseDTO(c) for c in self.session.query(Course)}
         self.lecturers = {l.id: LecturerDTO(l) for l in self.session.query(Lecturer)}
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
         self.session.close()
         self.name2courses = {}
-        self.courses_words_dict = create_words_dict(self.courses.values())
+        self.courses_words_dict = create_words_dict(self.multi_courses.values())
         self.lecturers_words_dict = create_words_dict(self.lecturers.values())
 
 

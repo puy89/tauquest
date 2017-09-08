@@ -67,14 +67,7 @@ def parse_courses(lecturers):
             course_group_id = course_id[-2:]
 
             course = Course(course_group_id=course_group_id,
-                            name=course_row[title2idx['name']],
-                            hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
-                            hebrew_department=unicode(course_row[title2idx['department']]),
-                            department=department and unicode(department),
-                            faculty=unicode(faculty),
-                            semester=1 + ord(course_row[title2idx['semester']][1]) - 0x90,
-                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])])
-                            )
+                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]))
 
             occurence = Occurence(day=course_day,
                                   start_time=start_time,
@@ -94,7 +87,14 @@ def parse_courses(lecturers):
             if multi_course_id in multi_courses.keys():
                 multi_course = multi_courses[multi_course_id]
             else:
-                multi_course = MultiCourse(multi_course_id=multi_course_id)
+                multi_course = MultiCourse(multi_course_id=multi_course_id,
+                                           name=course_row[title2idx['name']],
+                                           hebrew_name=unicode(course_row[title2idx['hebrew_name']]),
+                                           hebrew_department=unicode(course_row[title2idx['department']]),
+                                           department=department and unicode(department),
+                                           faculty=unicode(faculty),
+                                           semester=1 + ord(course_row[title2idx['semester']][1]) - 0x90)
+
                 multi_courses[multi_course_id] = multi_course
 
             multi_course.courses.append(course)

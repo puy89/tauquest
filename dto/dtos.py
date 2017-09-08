@@ -11,14 +11,29 @@ class DTOClass(object):
         return self.id == other.id
 
 
-class CourseToLecturerMapping(DTOClass):
+class CourseToLecturerDTO(DTOClass):
     __tablename__ = 'course_to_lecturer'
 
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
 
-class LecturerDTO(DTOClass):
-    __tablename__ = 'lecturer'
+
+class ExamDTO(DTOClass):
+    __tablename__ = 'exam'
+
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__)
+
+
+class MultiCourseDTO(DTOClass):
+    __tablename__ = 'multi_course'
+
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__)
+
+
+class OccurenceDTO(DTOClass):
+    __tablename__ = 'occurence'
 
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
@@ -29,5 +44,19 @@ class CourseDTO(DTOClass):
 
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
-        # multiplicy?
-        # self.lecturers = Lecturer(c.lecturer) if c.lecturer is not None else None
+
+
+class PhoneDTO(DTOClass):
+    __tablename__ = 'phone'
+
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__)
+
+
+
+class LecturerDTO(DTOClass):
+    __tablename__ = 'lecturer'
+
+    def __init__(self, c):
+        self.__dict__ = dict(c.__dict__)
+
