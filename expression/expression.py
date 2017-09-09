@@ -3,8 +3,8 @@ from datetime import datetime
 from numpy import inf
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from db.entities import Course, Lecturer
-from dto.dtos import CourseDTO, LecturerDTO
+from db.entities import Course, Lecturer, MultiCourse, Occurence, Phone
+from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, OccurenceDTO, PhoneDTO
 
 future_time = datetime.now().replace(year=9999)
 past_time =  datetime.now().replace(year=1980)
@@ -31,6 +31,16 @@ name_types = {CourseDTO: 'Course',
               Integer: 'Integer',
               String: 'String',
               Unicode: 'Unicode'}
+
+clss = [(CourseDTO, Course), (MultiCourseDTO, MultiCourse),
+       (OccurenceDTO, Occurence), (LecturerDTO, Lecturer), (PhoneDTO, Phone)]
+
+init2cls = {cl.__tablename__[:3]: (cl_dto, cl)  for cl_dto, cl in clss}
+
+manys_preds = {k for _, cl in init2cls.values() for k, v in vars(cl).items() if k[0] != '_' and vars(v).get('type') == list} #will always be list?
+
+name2cls = {cl.__tablename__: cl for _, cl in clss}
+
 types_name = {v: k for k, v in name_types.items()}
 
 pred2type = dict(start_time='hour',
@@ -48,8 +58,22 @@ pred2type = dict(start_time='hour',
                  fax='phone',
                  title='title',
                  honor='honor',
-                 
                 )
+
+course_comopsed_pred = {}
+'''
+multi_course_composed_pred = {'moed_a':lambda mc: mc.test.moed_a,
+                 'moed_b':lambda mc: mc.test.moed_b,
+                 'start_time':lambda mc: {c.start_time for c in mc.courses for occ in c.occurences},
+                 'end_time':lambda mc: {c.start_time for c in mc.courses for occ in c.occurences},
+                 'kind':lambda mc: {c.kind for c in mc.courses for occ in c.occurences},
+                 'teachers':lambda mc: set.union(*(c.lecturers for c in mc.courses)),
+                 'lecturer':lambda mc: set.union(*(c.lecturers for c in mc.courses if c.kind == 'lecture')),
+                 'assistant':lambda mc: set.union(*(c.lecturers for c in mc.courses if c.kind == 'recitation')),
+                 'building':lambda mc: {occ.building for c in mc.courses},
+                 'place':lambda mc: {c.place for occ in c.occurences},                              
+                }
+'''
 
 class DCS(object):
     pass
@@ -152,15 +176,19 @@ class BasePredicate(DCS):
 
 class Predicate(BasePredicate):
     def __init__(self, pred, span=()):
-        if type(pred) is not str:
+        if type(pred) is Predicate:
+            self.__dict__ = vars(pred)
+            self.span = span
+        elif type(pred) is not str:
             self.unknown = True
             return
         self.pred = pred
         self.span = span
         self.is_attr = False
-        self.is_db_join = False
+        self.is_union = False
         self.is_func = False
         self.is_rev = False
+        self.is_composed = False
         self.is_lec = False
         self.unknown = False
         self.rtype = None
@@ -171,49 +199,36 @@ class Predicate(BasePredicate):
             self.func = func_type[0]
             self.is_func = True
             return
-        if pred == 'teach':
-            self.ltype = CourseDTO
-            self.rtype = LecturerDTO
-            self.is_db_join = True
-            return
         if pred[:4] == 'rev_':
             self.pred = pred = pred[4:]
             self.is_rev = True
-        attr = vars(Course).get(pred)
+        split_pred = pred.split('_')
+        self.init = init = split_pred[0]
+        self.pred = pred = '_'.join(split_pred[1:])
+        ClassDTO, Class = init2cls.get(init, (CourseDTO, Course))
+        attr = vars(Class).get(pred)
         if attr is not None:
             if self.is_rev:
                 self.rtype = type(attr.type)
-                self.ltype = CourseDTO
+                self.ltype = ClassDTO
+                assert attr not in manys_preds
             else:
-                self.rtype = CourseDTO
-                self.ltype = type(attr.type)
-                if pred == 'lecturer':
-                    assert not self.is_rev
-                    self.ltype = LecturerDTO
-                    self.rtype = CourseDTO
-
+                if pred in manys_preds:
+                    self.is_union = True
+                    self.ltype = name2cls[attr.key[:-1]]#ugly!!!
+                else:
+                    self.ltype = type(attr.type)
+                self.rtype = ClassDTO
+                
             self.is_attr = True
         else:
-            if pred[:4] == 'lec_':
-                self.pred = pred = pred[4:]
-                self.is_lec = True
-            attr = vars(Lecturer).get(pred)
-            if attr is not None:
-                if self.is_rev:
-                    self.rtype = type(attr.type)
-                    self.ltype = LecturerDTO
-                else:
-                    self.rtype = LecturerDTO
-                    self.ltype = type(attr.type)
-                self.is_attr = True
-            else:
-                self.unknown = True
+            self.unknown = True
 
     def __str__(self):
-        return '{}{}{}'.format('rev_' * self.is_rev, 'lec_' * self.is_lec, self.pred)
+        return '{}{}_{}'.format('rev_' * self.is_rev, self.init, self.pred)
     
     def copy(self, span):
-        return Predicate(str(self), span)
+        return Predicate(self, span)
 
 
 class Join(Expression):
@@ -227,7 +242,7 @@ class Join(Expression):
         self.is_attr = self.pred.is_attr
 
         self.is_attr = self.pred.is_attr
-        self.is_db_join = self.pred.is_db_join
+        self.is_union = self.pred.is_union
         self.is_func = self.pred.is_func
         self.is_rev = self.pred.is_rev
         if self.pred.is_func:
@@ -241,22 +256,18 @@ class Join(Expression):
             return self.saved_res
         un = self.un
         pred = self.pred.pred
+        table = db.type2table.get(self.type)
         if self.is_func:
-            if self.type == CourseDTO:
+            # reminder: funcs predicate are between same types!!
+            # more convinient that func join of real db entity will return actual enities
+            if table is not None:
                 func = self.pred.func
                 ents = un.execute(db)
                 if not ents:
-                    return{}
-                self.saved_res = {c for c in db.courses.values()
-                        if any(func(c, ent) for ent in ents)}
-                return self.saved_res
-            elif self.type == LecturerDTO:
-                func = self.pred.func
-                ents = un.execute(db)
-                if not ents:
-                    return {}
-                self.saved_res =  {c for c in db.lecturers.values()
-                        if any(func(c, ent) for ent in ents)}
+                    self.saved_res = {}
+                    return self.saved_res
+                self.saved_res = {c for c in table.values()
+                                  if any(func(c, ent) for ent in ents)}
                 return self.saved_res
             else:
                 if self.un.is_func:
@@ -267,27 +278,17 @@ class Join(Expression):
                     return lambda x: any(func(x, ent) for ent in ents)
         elif self.is_rev:
             ents = un.execute(db)
-            if un.is_func and un.type != CourseDTO and un.type != LecturerDTO:
-                if self.type == CourseDTO:
-                    self.saved_res = {ent for ent in db.courses.values() if ents(getattr(ent, pred))}
-                    return self.saved_res
-                if self.type == LecturerDTO:
-                    self.saved_res = {ent for ent in db.lecturers.values() if ents(getattr(ent, pred))}
-                    return self.saved_res
+            if un.is_func and un.type not in db.type2table:
+                self.saved_res = {ent for ent in table.values() if ents(getattr(ent, pred))}
+                return self.saved_res
             else:
-                if self.type == CourseDTO:
-                    self.saved_res = {ent for ent in db.courses.values() if getattr(ent, pred) in ents}
-                    return self.saved_res
-                if self.type == LecturerDTO:
-                    self.saved_res = {ent for ent in db.lecturers.values() if getattr(ent, pred) in ents}
-                    return self.saved_res
+                self.saved_res = {ent for ent in table.values() if getattr(ent, pred) in ents}
+                return self.saved_res
         elif self.is_attr:
-            self.saved_res = {getattr(ent, pred) if ent is not None else None for ent in un.execute(db)}
-            return self.saved_res
-        elif self.is_db_join:
-            # TODO: other joins?
-            ents = un.execute(db)
-            self.saved_res = {c for c in db.courses.values() if c.lecturer in ents}
+            if self.is_union:
+                self.saved_res = set.union(*(set(getattr(ent, pred)) for ent in un.execute(db)))
+            else:    
+                self.saved_res = {ent and getattr(ent, pred) for ent in un.execute(db)}
             return self.saved_res
 
     def __str__(self):
@@ -392,7 +393,7 @@ class Arg(Aggregation):
 
 class Earliest(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, CourseDTO, 'start_time', inf, min)
+        Arg.__init__(self, exp, span, OccurenceDTO, 'start_time', inf, min)
     
     def __str__(self):
         return 'earliest{}'.format(self.exp)
@@ -400,14 +401,14 @@ class Earliest(Arg):
 
 class Latest(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, CourseDTO, 'start_time', -inf, max)
+        Arg.__init__(self, exp, span, OccurenceDTO, 'start_time', -inf, max)
 
     def __str__(self):
         return 'latest{}'.format(self.exp)
 
 class EarliestMoedA(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, CourseDTO, 'moed_a', future_time, min)
+        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_a', future_time, min)
     
     def __str__(self):
         return 'earliest_moeda{}'.format(self.exp)
@@ -415,14 +416,14 @@ class EarliestMoedA(Arg):
 
 class LatestMoedA(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, CourseDTO, 'moed_a', past_time, max)
+        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_a', past_time, max)
 
     def __str__(self):
         return 'latest_moeda{}'.format(self.exp)
 
 class EarliestMoedB(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, CourseDTO, 'moed_b', future_time, min)
+        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_b', future_time, min)
     
     def __str__(self):
         return 'earliest_moedb{}'.format(self.exp)
@@ -430,7 +431,7 @@ class EarliestMoedB(Arg):
 
 class LatestMoedB(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, CourseDTO, 'moed_b', past_time, max)
+        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_b', past_time, max)
 
     def __str__(self):
         return 'latest_moedb{}'.format(self.exp)

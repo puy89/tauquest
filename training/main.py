@@ -3,8 +3,8 @@ import csv
 import numpy as np
 
 from db.db import db_instance
-from db.entities import Course, Lecturer, MultiCourse, CourseToLecturer
-from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO
+from db.entities import Course, Lecturer, MultiCourse, CourseToLecturer, Occurence
+from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO, OccurenceDTO
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
 try:
@@ -41,20 +41,25 @@ class DBCache(object):
     def __init__(self):
         self.session = db_instance.session
         #self.course_to_lecturers = {(c.course_id, c.lecturer_id) : CourseToLecturerDTO(c) for c in self.session.query(CourseToLecturer)}
-        self.multi_courses = {c.id : MultiCourseDTO(c) for c in self.session.query(MultiCourse)}
-        self.courses = {c.id : CourseDTO(course) for c in self.multi_courses.values() for course in c.courses}
-        #self.courses = {c.id: CourseDTO(c) for c in self.session.query(Course)}
+        self.multi_courses = {mc.id : MultiCourseDTO(mc) for mc in self.session.query(MultiCourse)}
+        self.courses = {c.id : CourseDTO(c) for c in self.session.query(Course)}
+        self.occurences = {occ.id : OccurenceDTO(occ) for occ in self.session.query(Occurence)}
         self.lecturers = {l.id: LecturerDTO(l) for l in self.session.query(Lecturer)}
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
         self.session.close()
         self.name2courses = {}
-        self.courses_words_dict = create_words_dict(self.courses.values(), lambda x: x.name)
+        self.courses_words_dict = create_words_dict(self.multi_courses.values(), lambda x: x.name)
         self.lecturers_words_dict = create_words_dict(self.lecturers.values(), lambda x: x.name)
         self.buildings_words_dict = create_words_dict({l.office_building for l in self.lecturers.values() if l.office_building is not None} |
-                                                      {c.building for c in self.courses.values() if c.building is not None})
-        self.departements_words_dict = create_words_dict({c.department for c in self.courses.values() if c.department is not None})
-        self.faculties_words_dict = create_words_dict({c.faculty for c in self.courses.values() if c.faculty is not None})
+                                                      {occ.building for c in self.courses.values() for occ in c.occurences if occ.building is not None})
+        self.departements_words_dict = create_words_dict({c.department for c in self.multi_courses.values() if c.department is not None})
+        self.faculties_words_dict = create_words_dict({c.faculty for c in self.multi_courses.values() if c.faculty is not None})
+        self.type2table = {MultiCourseDTO: self.multi_courses,
+                          CourseDTO: self.courses,
+                          OccurenceDTO: self.occurences,
+                          LecturerDTO: self.lecturers,
+                          }
         self.type2words_dict = {Course: self.courses_words_dict,
                                 Lecturer: self.lecturers_words_dict,
                                'building': self.buildings_words_dict,

@@ -14,7 +14,7 @@ except ImportError:
     
 
 
-assert sorted((BasePredicate, Aggregation, Expression)) == [Expression, BasePredicate, Aggregation]
+#assert sorted((BasePredicate, Aggregation, Expression)) == [Expression, BasePredicate, Aggregation]
 
 class QuestionsParser:
 
