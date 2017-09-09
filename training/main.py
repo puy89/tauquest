@@ -56,14 +56,17 @@ class DBCache(object):
         # update courses
         self.courses = dict()
         for multi_course in self.multi_courses.values():
+            multi_course.exam.update_exam(self.multi_courses)
             for course in multi_course.courses:
                 self.courses[course.id] = course
 
         # update occurences
         self.occurences = dict()
         for course in self.courses.values():
+            course.update_course(self.multi_courses)
             for occurence in course.occurences:
                 self.occurences[occurence.id] = occurence
+                occurence.update_occurence(self.courses)
 
 
         # update course objects for all lecturers
@@ -73,6 +76,8 @@ class DBCache(object):
         for course in self.courses.values():
             for lecturer in course.lecturers:
                 lecturer.update_courses(self.courses)
+                for phone in lecturer.phones:
+                    phone.update_phone(self.lecturers)
 
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}

@@ -20,7 +20,10 @@ class ExamDTO(DTOClass):
     def __init__(self, c):
         self.moed_a = c.moed_a
         self.moed_b = c.moed_b
+        self.multi_course = c.multi_course_id
 
+    def update_exam(self, multi_courses_map):
+        self.multi_course = multi_courses_map.get(self.multi_course)
 
 class MultiCourseDTO(DTOClass):
     def __init__(self, c):
@@ -44,23 +47,32 @@ class OccurenceDTO(DTOClass):
         self.day = c.day
         self.place = c.place
         self.building = c.building
+        self.course = c.course_id
 
+    def update_occurence(self, courses_map):
+        self.course = courses_map.get(self.course)
 
 class CourseDTO(DTOClass):
     def __init__(self, c):
         self.id = c.id
-        self.multi_course_id = c.multi_course_id
         self.course_group_id = c.course_group_id
         self.kind = c.kind
         self.occurences = [OccurenceDTO(occurence) for occurence in c.occurences]
         self.lecturers = [LecturerDTO(lecturer.lecturer) for lecturer in c.lecturers]
+        self.multi_course = c.multi_course_id
+
+    def update_course(self, multi_courses_map):
+        self.multi_course = multi_courses_map.get(self.multi_course)
 
 
 class PhoneDTO(DTOClass):
     def __init__(self, c):
         self.id = c.id
         self.phone = c.phone
+        self.lecturer = c.lecturer_id
 
+    def update_phone(self, lecturers_map):
+        self.lecturer = lecturers_map.get(self.lecturer)
 
 class LecturerDTO(DTOClass):
     def __init__(self, c):
