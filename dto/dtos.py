@@ -75,3 +75,7 @@ class LecturerDTO(DTOClass):
         self.fax = c.fax
         self.title = c.title
         self.honor = c.honor
+        self.courses = [course.course.id for course in c.courses]
+
+    def update_courses(self, course_id_to_course_map):
+        self.courses = [course_id_to_course_map[id] for id in self.courses]

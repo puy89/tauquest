@@ -7,13 +7,16 @@ from db.entities import Course, Lecturer, MultiCourse, CourseToLecturer, Occuren
 from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO, OccurenceDTO
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
+
 try:
     from tqdm import tqdm
 except ImportError:
     tqdm = lambda x: x
 
+
 def create_words_dict(ents, func=lambda x: x):
     cache = {}
+
     def create_words_dict(ents, path=()):
         if len({func(ent) for ent in ents}) == 1:
             return
@@ -30,49 +33,76 @@ def create_words_dict(ents, func=lambda x: x):
         for word, v in d.items():
             if type(v) is set:
                 k = tuple(sorted(path + (word,)))
-                new_d = create_words_dict(v, path+(word,))
+                new_d = create_words_dict(v, path + (word,))
                 cache[k] = d[word] = v, new_d
         return d
+
     return create_words_dict(ents)
 
-    
 
 class DBCache(object):
     def __init__(self):
         self.session = db_instance.session
-        #self.course_to_lecturers = {(c.course_id, c.lecturer_id) : CourseToLecturerDTO(c) for c in self.session.query(CourseToLecturer)}
-        self.multi_courses = {mc.id : MultiCourseDTO(mc) for mc in self.session.query(MultiCourse)}
-        self.courses = {c.id : CourseDTO(c) for c in self.session.query(Course)}
-        self.occurences = {occ.id : OccurenceDTO(occ) for occ in self.session.query(Occurence)}
+
+        # fetch multi courses
+        self.multi_courses = {mc.id: MultiCourseDTO(mc) for mc in self.session.query(MultiCourse)}
+
+        # fetch lecturers
         self.lecturers = {l.id: LecturerDTO(l) for l in self.session.query(Lecturer)}
+
+        # close session
+        self.session.close()
+
+        # update courses
+        self.courses = dict()
+        for multi_course in self.multi_courses.values():
+            for course in multi_course.courses:
+                self.courses[course.id] = course
+
+        # update occurences
+        self.occurences = dict()
+        for course in self.courses.values():
+            for occurence in course.occurences:
+                self.occurences[occurence.id] = occurence
+
+
+        # update course objects for all lecturers
+        for lecturer in self.lecturers.values():
+            lecturer.update_courses(self.courses)
+
+        for course in self.courses.values():
+            for lecturer in course.lecturers:
+                lecturer.update_courses(self.courses)
+
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
-        self.session.close()
         self.name2courses = {}
         self.courses_words_dict = create_words_dict(self.multi_courses.values(), lambda x: x.name)
         self.lecturers_words_dict = create_words_dict(self.lecturers.values(), lambda x: x.name)
-        self.buildings_words_dict = create_words_dict({l.office_building for l in self.lecturers.values() if l.office_building is not None} |
-                                                      {occ.building for c in self.courses.values() for occ in c.occurences if occ.building is not None})
-        self.departements_words_dict = create_words_dict({c.department for c in self.multi_courses.values() if c.department is not None})
-        self.faculties_words_dict = create_words_dict({c.faculty for c in self.multi_courses.values() if c.faculty is not None})
+        self.buildings_words_dict = create_words_dict(
+            {l.office_building for l in self.lecturers.values() if l.office_building is not None} |
+            {occ.building for c in self.courses.values() for occ in c.occurences if occ.building is not None})
+        self.departements_words_dict = create_words_dict(
+            {c.department for c in self.multi_courses.values() if c.department is not None})
+        self.faculties_words_dict = create_words_dict(
+            {c.faculty for c in self.multi_courses.values() if c.faculty is not None})
         self.type2table = {MultiCourseDTO: self.multi_courses,
-                          CourseDTO: self.courses,
-                          OccurenceDTO: self.occurences,
-                          LecturerDTO: self.lecturers,
-                          }
+                           CourseDTO: self.courses,
+                           OccurenceDTO: self.occurences,
+                           LecturerDTO: self.lecturers,
+                           }
         self.type2words_dict = {Course: self.courses_words_dict,
                                 Lecturer: self.lecturers_words_dict,
-                               'building': self.buildings_words_dict,
-                               'department': self.departements_words_dict,
-                               'faculty': self.faculties_words_dict}
-        
-        
+                                'building': self.buildings_words_dict,
+                                'department': self.departements_words_dict,
+                                'faculty': self.faculties_words_dict}
 
 
 def load_dataset():
     with open('files/questions-answers.csv') as f:
         r = csv.reader(f)
-        questions, answers = np.array([(row[0], set(map(unicode, row[1:next(i for i, cell in enumerate(row) if cell == '')]))) for row in r]).T
+        questions, answers = np.array(
+            [(row[0], set(map(unicode, row[1:next(i for i, cell in enumerate(row) if cell == '')]))) for row in r]).T
         return questions, answers
 
 
@@ -85,6 +115,7 @@ def pretty_print_result(question, result):
             print(u"\t{0}".format(r.id))
         else:
             print(u"\t{0}".format(r))
+
 
 def main():
     db_cache = DBCache()
