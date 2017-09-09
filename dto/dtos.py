@@ -1,5 +1,3 @@
-
-
 class DTOClass(object):
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
@@ -19,44 +17,61 @@ class CourseToLecturerDTO(DTOClass):
 
 
 class ExamDTO(DTOClass):
-    __tablename__ = 'exam'
-
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__)
+        self.moed_a = c.moed_a
+        self.moed_b = c.moed_b
 
 
 class MultiCourseDTO(DTOClass):
-    __tablename__ = 'multi_course'
-
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__)
+        self.id = c.id
+        self.multi_course_id = c.multi_course_id
+        self.exam = ExamDTO(c.exam)
+        self.courses = [CourseDTO(course) for course in c.courses]
+        self.name = c.name
+        self.hebrew_name = c.hebrew_name
+        self.hebrew_department = c.hebrew_department
+        self.department = c.department
+        self.faculty = c.faculty
+        self.semester = c.semester
 
 
 class OccurenceDTO(DTOClass):
-    __tablename__ = 'occurence'
-
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__)
+        self.id = c.id
+        self.start_time = c.start_time
+        self.end_time = c.end_time
+        self.day = c.day
+        self.place = c.place
+        self.building = c.building
 
 
 class CourseDTO(DTOClass):
-    __tablename__ = 'course'
-
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__)
+        self.id = c.id
+        self.multi_course_id = c.multi_course_id
+        self.course_group_id = c.course_group_id
+        self.kind = c.kind
+        self.occurences = [OccurenceDTO(occurence) for occurence in c.occurences]
+        self.lecturers = [LecturerDTO(lecturer.lecturer) for lecturer in c.lecturers]
 
 
 class PhoneDTO(DTOClass):
-    __tablename__ = 'phone'
-
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__)
-
+        self.id = c.id
+        self.phone = c.phone
 
 
 class LecturerDTO(DTOClass):
-    __tablename__ = 'lecturer'
-
     def __init__(self, c):
-        self.__dict__ = dict(c.__dict__)
-
+        self.id = c.id
+        self.name = c.name
+        self.site = c.site
+        self.hebrew_name = c.hebrew_name
+        self.email = c.email
+        self.office_building = c.office_building
+        self.office = c.office
+        self.phones = [PhoneDTO(phone) for phone in c.phones]
+        self.fax = c.fax
+        self.title = c.title
+        self.honor = c.honor
