@@ -18,11 +18,11 @@ def create_words_dict(ents, func=lambda x: x):
     cache = {}
 
     def create_words_dict(ents, path=()):
-        if len({func(ent) for ent in ents}) == 1:
+        if len({func(ent).lower() for ent in ents}) == 1:
             return
         d = {}
         for ent in ents:
-            for word in func(ent).split():
+            for word in func(ent).lower().split():
                 if word not in path:
                     k = tuple(sorted(path + (word,)))
                     old_d = cache.get(k)
@@ -43,16 +43,17 @@ def create_words_dict(ents, func=lambda x: x):
 class DBCache(object):
     def __init__(self):
         self.session = db_instance.session
-
+        print 'extract information from db'
         # fetch multi courses
-        self.multi_courses = {mc.id: MultiCourseDTO(mc) for mc in self.session.query(MultiCourse)}
-
+        print 'courses'
+        self.multi_courses = {mc.id: MultiCourseDTO(mc) for mc in tqdm(self.session.query(MultiCourse))}
         # fetch lecturers
-        self.lecturers = {l.id: LecturerDTO(l) for l in self.session.query(Lecturer)}
+        print 'lecturers'
+        self.lecturers = {l.id: LecturerDTO(l) for l in tqdm(self.session.query(Lecturer))}
 
         # close session
         self.session.close()
-
+        print 'extract relation from db'
         # update courses
         self.courses = dict()
         for multi_course in self.multi_courses.values():
@@ -78,11 +79,12 @@ class DBCache(object):
                 lecturer.update_courses(self.courses)
                 for phone in lecturer.phones:
                     phone.update_phone(self.lecturers)
-
+                    
+        print 'extract strings from db'
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
-        self.name2courses = {}
-        self.courses_words_dict = create_words_dict(self.multi_courses.values(), lambda x: x.name)
+        print 'creating words trees'
+        self.multi_courses_words_dict = create_words_dict(self.multi_courses.values(), lambda x: x.name)
         self.lecturers_words_dict = create_words_dict(self.lecturers.values(), lambda x: x.name)
         self.buildings_words_dict = create_words_dict(
             {l.office_building for l in self.lecturers.values() if l.office_building is not None} |
@@ -96,11 +98,12 @@ class DBCache(object):
                            OccurenceDTO: self.occurences,
                            LecturerDTO: self.lecturers,
                            }
-        self.type2words_dict = {Course: self.courses_words_dict,
-                                Lecturer: self.lecturers_words_dict,
+        self.type2words_dict = {MultiCourseDTO: self.multi_courses_words_dict,
+                                LecturerDTO: self.lecturers_words_dict,
                                 'building': self.buildings_words_dict,
                                 'department': self.departements_words_dict,
                                 'faculty': self.faculties_words_dict}
+        print 'db is ready'
 
 
 def load_dataset():

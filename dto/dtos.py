@@ -18,6 +18,7 @@ class CourseToLecturerDTO(DTOClass):
 
 class ExamDTO(DTOClass):
     def __init__(self, c):
+        self.id = c.id
         self.moed_a = c.moed_a
         self.moed_b = c.moed_b
         self.multi_course = c.multi_course_id

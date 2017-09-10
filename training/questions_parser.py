@@ -1,8 +1,8 @@
 import numpy as np
 import nltk
 
-from expression.expression import (Expression, Join, Intersect, Predicate, Aggregation,
-                                   CourseDTO, LecturerDTO, LexEnt, Entity, Unicode, DCS, type2preds, BasePredicate)
+from expression.expression import (Expression, Join, Intersect, Predicate, Aggregation, OccurenceDTO, MultiCourseDTO,
+                                   CourseDTO, LecturerDTO, LexEnt, Entity, Unicode, DCS, BasePredicate)
 from training.feature_extrector import FeatureExtractor
 try:
     from tqdm import tqdm
@@ -14,7 +14,13 @@ except ImportError:
     
 
 
-#assert sorted((BasePredicate, Aggregation, Expression)) == [Expression, BasePredicate, Aggregation]
+
+bridge_dict = {OccurenceDTO: ([Predicate('occ_course'), Predicate('cou_multi_course')], True),
+               MultiCourseDTO: ([Predicate('mul_courses'), Predicate('cou_occurences')], True),
+               CourseDTO: ([Predicate('cou_multi_course'), Predicate('cou_occurences')], False),
+              }
+
+        
 
 class QuestionsParser:
 
@@ -29,21 +35,42 @@ class QuestionsParser:
                 #what sholud have the pred span??? should be? information will pass with structure?
                 for join in [Join(pred.copy(exp.span), exp, span=exp.span)]]
 
+    def course_bridge(self, exp, span, sent):
+        exps = []
+        preds = bridge_dict.get(exp.type)
+        if preds is None:
+            return exps
+        preds, recurrent = preds
+        for pred in preds:
+            join = Join(pred.copy(span), exp, span)
+            if recurrent:
+                exp = join
+            exps.append((join, self._feature_extractor.extract_features(sent, join)))
+        return exps
 
+    def parse_times(self, time):
+        match = time_p.match()
+        if match:
+            h, m = match.groups()
+            return Entity(h*100+m, 'time')
+    
     def parse_sent(self, sent, theta, k=10):
         sent = nltk.pos_tag(nltk.word_tokenize(sent))
         words = np.array(sent)[:, 0]
         n = len(sent)
-        span_exps = {}
+        self.span_exps = span_exps = {}
         for i, (w, pos) in enumerate(sent):
             terms = self._lexicon.get(w.replace('-', ' '))
             span_exps[i, i] = []
             if terms is not None:
-                for term in terms:
-                    if isinstance(terms[0], DCS):
+                if isinstance(terms[0], DCS):
+                    for term in terms:
                         span_exps[i, i].append((term.copy((i, i)), None))
-            else:
+            else:#only if else????
                 #span_exps[i, i].append((Entity(w, Unicode, (i, i)), None))
+                time = self.parse_times(w)
+                if time is not None:
+                    span_exps[i, i].append((time.copy((i, i)), None))
                 for ent_type in self._db.type2words_dict:
                     exp = LexEnt([w], ent_type, (i, i) )
                     if 0 < len(exp.execute(self._db)) < 1000: 
@@ -59,6 +86,7 @@ class QuestionsParser:
                     exp = LexEnt(words[i: j+1], ent_type, (i, j) )
                     if 0 < len(exp.execute(self._db)) < 1000: 
                         span_exps[i, j].append((exp, None))
+                        span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
         #after for: clear short span contained in probably good names?
         largest_spans = []
         max_span_size = 0
@@ -75,7 +103,7 @@ class QuestionsParser:
                             for right, _ in span_exps[h, j]:
                                 exp = None
                                 (dcs1, type1), (dcs2, type2) = sorted(((left, type(left).__bases__[0]),
-                                                                       (right, type(right).__bases__[0])), key=lambda (dcs, type): type)
+                                                                       (right, type(right).__bases__[0])), key=lambda (dcs, type): type != Expression)
                                 if type1 == Expression:
                                     if type2 == BasePredicate:
                                         if dcs1.type == dcs2.rtype and not (
@@ -90,15 +118,11 @@ class QuestionsParser:
                                             # if exp is not None:
                                     if exp is not None:
                                         exps.append((exp, self._feature_extractor.extract_features(sent, exp)))
+                                        exps.extend(self.course_bridge(exp, (i, j), sent))
+                                            
+                                            
                 #bridge
                 #exps.extend([join for exp, _ in exps if isinstance(exp, Expression) for join in self.bridge(sent, exp)])
                 exps.sort(key=lambda (exp, feats): feats.dot(theta) if feats is not None else -np.inf)
                 span_exps[i, j] = exps[-k:]
-                span_size = j - i
-                if  span_size > max_span_size and span_exps[i, j]:
-                    max_span_size = span_size
-                    largest_spans = list(span_exps[i, j])
-                elif span_size == max_span_size:
-                    largest_spans.extend(span_exps[i, j])
-        largest_spans.sort(key = lambda (exp, feats): feats.dot(theta) if feats is not None else -np.inf)
-        return largest_spans[-k:]
+        return sorted((exp for exps in span_exps.values() for exp in exps), key=lambda (exp, feats): feats.dot(theta) if feats is not None else -np.inf)[-k:]

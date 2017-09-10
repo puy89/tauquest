@@ -45,7 +45,10 @@ class FeatureExtractor:
                 dfs(node.exp1)
                 dfs(node.exp2)
                 # TODO bridge
-
+        if exp.span[0] > 0:
+            skips.append((0, exp.span[0]))
+        if exp.span[1] < len(sent)-1:
+            skips.append((exp.span[1], len(sent)))
         dfs(exp)
         # Rule features
         # TODO bridge

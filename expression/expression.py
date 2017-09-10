@@ -3,16 +3,16 @@ from datetime import datetime
 from numpy import inf
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from db.entities import Course, Lecturer, MultiCourse, Occurence, Phone
-from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, OccurenceDTO, PhoneDTO
+from db.entities import Course, Lecturer, MultiCourse, Occurence, Phone, Exam
+from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, OccurenceDTO, ExamDTO, PhoneDTO
 
 future_time = datetime.now().replace(year=9999)
 past_time =  datetime.now().replace(year=1980)
 
-funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, Integer),
-         '>': (lambda x, y: x is not None and y is not None and x > y, Integer),
-         '<=': (lambda x, y: x is not None and y is not None and x <= y, Integer),
-         '>=': (lambda x, y: x is not None and y is not None and x >= y, Integer),
+funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, 'time'),
+         '>': (lambda x, y: x is not None and y is not None and x > y, 'time'),
+         '<=': (lambda x, y: x is not None and y is not None and x <= y, 'time'),
+         '>=': (lambda x, y: x is not None and y is not None and x >= y, 'time'),
          'date_after': (lambda x, y: x is not None and y is not None and x < y, datetime),
          'date_before': (lambda x, y: x is not None and y is not None and x > y, datetime),
          'date_aftereq': (lambda x, y: x is not None and y is not None and x <= y, datetime),
@@ -33,18 +33,22 @@ name_types = {CourseDTO: 'Course',
               Unicode: 'Unicode'}
 
 clss = [(CourseDTO, Course), (MultiCourseDTO, MultiCourse),
-       (OccurenceDTO, Occurence), (LecturerDTO, Lecturer), (PhoneDTO, Phone)]
+       (OccurenceDTO, Occurence), (LecturerDTO, Lecturer),
+        (PhoneDTO, Phone), (ExamDTO, Exam), ]
 
-init2cls = {cl.__tablename__[:3]: (cl_dto, cl)  for cl_dto, cl in clss}
+init2cls = {cl.__tablename__[:3]: (dto_cl, cl) for dto_cl, cl in clss}
 
-manys_preds = {k for _, cl in init2cls.values() for k, v in vars(cl).items() if k[0] != '_' and vars(v).get('type') == list} #will always be list?
+#very very stupid
+manys_preds = {k for _, cl in init2cls.values() for k, v in vars(cl).items() if k[0] != '_' and vars(v).get('type') == list}
 
-name2cls = {cl.__tablename__: cl for _, cl in clss}
+name2cls = {cl.__tablename__: (dto_cl, cl) for dto_cl, cl in clss}
+
+dto2name = {dto_cl: k for k, (dto_cl, cl) in name2cls.iteritems()}
 
 types_name = {v: k for k, v in name_types.items()}
 
-pred2type = dict(start_time='hour',
-                 end_time='hour',
+pred2type = dict(start_time='time',
+                 end_time='time',
                  department='department',
                  faculty='faculty',
                  semsester='semsester',
@@ -56,9 +60,12 @@ pred2type = dict(start_time='hour',
                  office='room',
                  phone='phone',
                  fax='phone',
+                 email='email',
                  title='title',
                  honor='honor',
                 )
+pred2type.update({k: dto for k, (dto, _) in name2cls.iteritems()})
+pred2type.update({k+'s': dto for k, (dto, _) in name2cls.iteritems()})
 
 course_comopsed_pred = {}
 '''
@@ -99,7 +106,7 @@ class Entity(Expression):
             return {self.id}
 
     def __str__(self):
-        return u'{}:{}'.format(name_types[self.type], self.id)
+        return u'{}:{}'.format(dto2name.get(self.type, self.type), self.id)
     
     def copy(self, span):
         return Entity(self.id, self.type, span)    
@@ -179,6 +186,7 @@ class Predicate(BasePredicate):
         if type(pred) is Predicate:
             self.__dict__ = vars(pred)
             self.span = span
+            return
         elif type(pred) is not str:
             self.unknown = True
             return
@@ -188,11 +196,11 @@ class Predicate(BasePredicate):
         self.is_union = False
         self.is_func = False
         self.is_rev = False
-        self.is_composed = False
         self.is_lec = False
         self.unknown = False
         self.rtype = None
         self.ltype = None
+        self.init = ''
         func_type = funcs.get(pred)
         if func_type is not None:
             self.ltype = self.rtype = func_type[1]
@@ -206,18 +214,19 @@ class Predicate(BasePredicate):
         self.init = init = split_pred[0]
         self.pred = pred = '_'.join(split_pred[1:])
         ClassDTO, Class = init2cls.get(init, (CourseDTO, Course))
-        attr = vars(Class).get(pred)
-        if attr is not None:
+        ltype = pred2type.get(pred)
+        if ltype is not None:
             if self.is_rev:
-                self.rtype = type(attr.type)
+                self.rtype = ltype
                 self.ltype = ClassDTO
-                assert attr not in manys_preds
+                if pred in manys_preds:
+                    self.unknown = True
             else:
                 if pred in manys_preds:
                     self.is_union = True
-                    self.ltype = name2cls[attr.key[:-1]]#ugly!!!
+                    self.ltype = ltype
                 else:
-                    self.ltype = type(attr.type)
+                    self.ltype = ltype
                 self.rtype = ClassDTO
                 
             self.is_attr = True
@@ -264,7 +273,7 @@ class Join(Expression):
                 func = self.pred.func
                 ents = un.execute(db)
                 if not ents:
-                    self.saved_res = {}
+                    self.saved_res = set()
                     return self.saved_res
                 self.saved_res = {c for c in table.values()
                                   if any(func(c, ent) for ent in ents)}
@@ -286,7 +295,11 @@ class Join(Expression):
                 return self.saved_res
         elif self.is_attr:
             if self.is_union:
-                self.saved_res = set.union(*(set(getattr(ent, pred)) for ent in un.execute(db)))
+                ents = un.execute(db)
+                if not ents:
+                    self.saved_res = set()
+                    return self.saved_res
+                self.saved_res = set.union(*(set(getattr(ent, pred)) for ent in ents))
             else:    
                 self.saved_res = {ent and getattr(ent, pred) for ent in un.execute(db)}
             return self.saved_res
@@ -298,21 +311,17 @@ class Join(Expression):
         return Join(self.pred.copy(span), self.un.copy(span), span)    
 
 class LexEnt(Expression):
-    def __init__(self, words, ent_type, span=()):
+    def __init__(self, words, type, span=()):
         self.words = words
         self.span = span
-        self.ent_type = ent_type
-        if ent_type == Course or ent_type == Lecturer:
-            self.type = ent_type
-        else:
-            self.type = Unicode
+        self.type = type
         self.is_func = False
         self.saved_res = None
     
     def execute(self, db):
         if self.saved_res:
             return self.saved_res
-        d = db.type2words_dict[self.ent_type]
+        d = db.type2words_dict[self.type]
         for word in self.words:
             if not d:
                 self.saved_res = set()
@@ -327,7 +336,7 @@ class LexEnt(Expression):
         return self.saved_res
     
     def __str__(self):
-        return 'lex_ent_{}({})'.format(self.ent_type if self.type == Unicode else self.ent_type.__tablename__, ','.join(self.words))
+        return 'lex_ent_{}({})'.format(dto2name.get(self.type, self.type), ','.join(self.words))
 
 class Aggregation(DCS):
     def __init__(self, exp=None, span=[], type=None):
@@ -490,23 +499,3 @@ def parse_dcs(exp):
     if exp == 'Lectures':
         return Lecturers()
     return exp
-
-type2preds = {}
-for func in funcs:
-    pred = Predicate(func)
-    type2preds.setdefault(pred.rtype, []).append(pred)
-for k, v in vars(Course).iteritems():
-    if type(v) is InstrumentedAttribute:
-        pred = Predicate(k)
-        type2preds.setdefault(pred.rtype, []).append(pred)
-        if k != 'lecturer':
-            pred = Predicate('rev_'+k)
-            type2preds.setdefault(pred.rtype, []).append(pred)
-    
-for k, v in vars(Lecturer).iteritems():
-    if type(v) is InstrumentedAttribute:
-        k = 'lec_' + k
-        pred = Predicate(k)
-        type2preds.setdefault(pred.rtype, []).append(pred)
-        pred = Predicate('rev_'+k)
-        type2preds.setdefault(pred.rtype, []).append(pred)
