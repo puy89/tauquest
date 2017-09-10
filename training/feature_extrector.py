@@ -1,6 +1,5 @@
 import numpy as np
-from expression.expression import Join
-from expression.expression import Intersect
+from expression.expression import Join, Intersect, LexEnt
 from nltk.data import load
 
 NUMBER_OF_FEATURES = 3000
@@ -27,7 +26,7 @@ class FeatureExtractor:
         joins = []
         intersects = []
         skips = []
-
+        lex_ents_feats = [0]
         def dfs(node):
             if type(node) is Join:
                 joins.append((node.pred.span[0], node.un.span[0]))
@@ -45,11 +44,16 @@ class FeatureExtractor:
                 dfs(node.exp1)
                 dfs(node.exp2)
                 # TODO bridge
+            if type(node) is LexEnt:
+                assert node.pwords is not None
+                feats[:2] += node.pcapital, node.pwords
         if exp.span[0] > 0:
             skips.append((0, exp.span[0]))
         if exp.span[1] < len(sent)-1:
             skips.append((exp.span[1], len(sent)))
+        #lexicon features
         dfs(exp)
+        i += 2
         # Rule features
         # TODO bridge
         feats[i] = len(joins);

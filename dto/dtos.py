@@ -43,8 +43,8 @@ class MultiCourseDTO(DTOClass):
 class OccurenceDTO(DTOClass):
     def __init__(self, c):
         self.id = c.id
-        self.start_time = c.start_time
-        self.end_time = c.end_time
+        self.start_time = c.day, c.start_time
+        self.end_time = c.day, c.end_time
         self.day = c.day
         self.place = c.place
         self.building = c.building

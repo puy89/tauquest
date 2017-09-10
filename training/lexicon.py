@@ -1,14 +1,13 @@
 from expression.expression import Predicate, Join, Entity, aggregats, Integer, Unicode, DCS
-import re
 
-time_p = re.compile('([0-2][0-9]):([0-5][0-9])')
 
 class Lexicon:
 
     def __init__(self):
         self._lexicon = \
             {
-                'who': ['cou_lecturers'],
+                'who': ['cou_lecturers', 'pho_lecturer'],
+                'whom': ['cou_lecturers', 'pho_lecturer'],
                 'teach': ['lec_courses', 'cou_lecturers'],
                 'taught': ['lec_courses', 'cou_lecturers'],
                 'lecturer': ['cou_lecturers', 'lec_courses'],
@@ -23,8 +22,8 @@ class Lexicon:
                 "'s": ['mul_department', 'mul_faculty'],
                 'email': ['lec_email'],
                 'address': ['lec_email'],
-                'phone': ['lec_phones'],
-                'number': ['lec_phones', 'lec_fax', 'occ_place', 'mul_id'],
+                'phone': ['lec_phones', 'pho_phone'],
+                'number': ['lec_phones', 'pho_phone', 'lec_fax', 'occ_place', 'mul_id'],
                 'room': ['lec_office', 'occ_place'],
                 'where': ['occ_place', 'occ_building', 'lec_office', 'lec_office_building'],
                 'building': ['occ_building', 'lec_office_building', 'occ_place', 'lec_office'],

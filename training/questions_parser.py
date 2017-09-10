@@ -9,10 +9,12 @@ try:
 except ImportError:
     tqdm = lambda x: x
 
+import re
 
 
-    
-
+time_p = re.compile('([0-2][0-9]):([0-5][0-9])')
+email_p = re.compile('[a-z0-9A-Z_]@[a-z0-9A-Z_]\\.[a-z0-9A-Z_](\\.[a-z0-9A-Z_])?(\\.[a-z0-9A-Z_])?')
+phone_p = re.compile('([0-9]{2})\\-?([0-9]{7})')
 
 
 bridge_dict = {OccurenceDTO: ([Predicate('occ_course'), Predicate('cou_multi_course')], True),
@@ -48,11 +50,22 @@ class QuestionsParser:
             exps.append((join, self._feature_extractor.extract_features(sent, join)))
         return exps
 
-    def parse_times(self, time):
-        match = time_p.match()
+    def parse_regexp(self, time):
+        match = time_p.match(time)
         if match:
-            h, m = match.groups()
+            h, m = map(int, match.groups())
             return Entity(h*100+m, 'time')
+        match = phone_p.match(time)
+        if match:
+            pre, phone = match.groups()
+            return Entity(pre+'-'+phone, 'phone')
+        match = email_p.match(time)
+        if match:
+            pre, phone = map(int, match.groups())
+            return Entity(pre+'-'+phone, 'phone')
+        
+        
+    
     
     def parse_sent(self, sent, theta, k=10):
         sent = nltk.pos_tag(nltk.word_tokenize(sent))
@@ -60,20 +73,20 @@ class QuestionsParser:
         n = len(sent)
         self.span_exps = span_exps = {}
         for i, (w, pos) in enumerate(sent):
-            terms = self._lexicon.get(w.replace('-', ' '))
+            w = w.lower() #TODO: using it as feature?
+            terms = self._lexicon.get(w, self._lexicon.get(w[:-1]))#he she it does
             span_exps[i, i] = []
             if terms is not None:
                 if isinstance(terms[0], DCS):
                     for term in terms:
                         span_exps[i, i].append((term.copy((i, i)), None))
             else:#only if else????
-                #span_exps[i, i].append((Entity(w, Unicode, (i, i)), None))
-                time = self.parse_times(w)
-                if time is not None:
-                    span_exps[i, i].append((time.copy((i, i)), None))
+                ent = self.parse_regexp(w)
+                if ent is not None:
+                    span_exps[i, i].append((ent.copy((i, i)), None))
                 for ent_type in self._db.type2words_dict:
                     exp = LexEnt([w], ent_type, (i, i) )
-                    if 0 < len(exp.execute(self._db)) < 1000: 
+                    if 0 < len(exp.execute(self._db)) < 20: 
                         span_exps[i, i].append((exp, None))
                 
                 
@@ -84,7 +97,7 @@ class QuestionsParser:
                 span_exps[i, j] = []
                 for ent_type in self._db.type2words_dict:
                     exp = LexEnt(words[i: j+1], ent_type, (i, j) )
-                    if 0 < len(exp.execute(self._db)) < 1000: 
+                    if 0 < len(exp.execute(self._db)) < 20: 
                         span_exps[i, j].append((exp, None))
                         span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
         #after for: clear short span contained in probably good names?
@@ -112,7 +125,7 @@ class QuestionsParser:
                                     elif type2 == Expression:
                                         if dcs1.type == dcs2.type and not type(dcs1) == type(dcs2) == LexEnt:
                                             exp = Intersect(dcs1, dcs2, (i, j))
-                                    elif type2 == Aggregation and type2.exp is None:
+                                    elif isinstance(dcs2, Aggregation) and dcs2.exp is None:
                                         if (dcs2.rtype is None or dcs2.rtype == dcs1.type):
                                             exp = dcs2.copy((i, j), dcs1)
                                             # if exp is not None:

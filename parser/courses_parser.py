@@ -41,23 +41,6 @@ def parse_courses(lecturers):
                 course_day = 1 + ord(course_row[title2idx['day']][1]) - 0x90
             else:
                 course_day = None
-
-            words = unicode(course_row[title2idx['lecturer']].lstrip().rstrip().split('#')[0].replace('-', ' ')).split(
-                ' ')
-            honor = honor_heb2en.get(words[0])
-            if honor is None:
-                lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))
-            else:
-                lecturer_name = unicode(' '.join(words[-1:] + words[1:-1]))
-            lecturer = lecturers.get(lecturer_name)
-            if lecturer is None:
-                if lecturer_name.rstrip():
-                    lecturer = Lecturer(hebrew_name=lecturer_name, honor=honor,
-                                        name=names_heb2en.get(lecturer_name, ''), courses=[])
-                    lecturers[lecturer_name] = lecturer
-
-            elif lecturer.honor is None:
-                lecturer.honor = honor
             building = building_heb2en.get(unicode(course_row[title2idx['building']]), '')
             faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
             course_id = course_row[title2idx['course_id']]
@@ -68,6 +51,30 @@ def parse_courses(lecturers):
 
             course = Course(course_group_id=course_group_id,
                             kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]))
+            names = set(course_row[title2idx['lecturer']].lstrip().rstrip().split('#'))
+            for name in names:
+                if not name:
+                    continue
+                words = unicode(name.replace('-', ' ')).split(
+                    ' ')
+                honor = honor_heb2en.get(words[0])
+                if honor is None:
+                    lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))
+                else:
+                    lecturer_name = unicode(' '.join(words[-1:] + words[1:-1]))
+                lecturer = lecturers.get(lecturer_name)
+                if lecturer is None:
+                    if lecturer_name.rstrip():
+                        lecturer = Lecturer(hebrew_name=lecturer_name, honor=honor,
+                                            name=names_heb2en.get(lecturer_name, ''), courses=[])
+                        lecturers[lecturer_name] = lecturer
+                elif lecturer.honor is None:
+                    lecturer.honor = honor
+                if lecturer is not None:
+                    course_to_lecturer_mapping = CourseToLecturer()
+                    course_to_lecturer_mapping.lecturer = lecturer
+                    course_to_lecturer_mapping.course = course
+                    course.lecturers.append(course_to_lecturer_mapping)
 
             occurence = Occurence(day=course_day,
                                   start_time=start_time,
@@ -75,13 +82,7 @@ def parse_courses(lecturers):
                                   place=unicode(course_row[title2idx['place']]),
                                   building=unicode(building))
             course.occurences.append(occurence)
-
-            if lecturer is not None:
-                course_to_lecturer_mapping = CourseToLecturer()
-                course_to_lecturer_mapping.lecturer = lecturer
-                course_to_lecturer_mapping.course = course
-                course.lecturers.append(course_to_lecturer_mapping)
-                courses.append(course)
+            courses.append(course)
 
             multi_course = None
             if multi_course_id in multi_courses.keys():

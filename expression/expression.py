@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from numpy import inf
+from numpy import inf, mean
 from sqlalchemy import Integer, String, Unicode
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from db.entities import Course, Lecturer, MultiCourse, Occurence, Phone, Exam
@@ -17,8 +17,8 @@ funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, 'time'),
          'date_before': (lambda x, y: x is not None and y is not None and x > y, datetime),
          'date_aftereq': (lambda x, y: x is not None and y is not None and x <= y, datetime),
          'date_beforeq': (lambda x, y: x is not None and y is not None and x >= y, datetime),
-         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, CourseDTO),
-         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, CourseDTO),#symmteric?
+         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time[1] >= y.end_time[1], OccurenceDTO),
+         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time[1] >= x.end_time[1], OccurenceDTO),#symmteric?
          'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or                                                                                   x.start_time <= y.start_time < x.end_time) , CourseDTO),
          'contains': (lambda x, y: x is not None and y is not None and y in x, String),
          'contained': (lambda x, y: x is not None and y is not None and x in y, String),
@@ -160,13 +160,13 @@ class Intersect(Expression):
             return self.saved_res
         exp1 = self.exp1
         exp2 = self.exp2
-        if exp1.is_func:
-            if exp2.is_func:
+        if exp1.is_func and exp1.type not in db.type2table:
+            if exp2.is_func and exp2.type not in db.type2table:
                 return lambda x: exp1.execute(db)(x) and exp2.execute(db)(x)
             else:
                 self.saved_res = {ent for ent in exp2.execute(db) if exp1.execute(db)(ent)}
                 return self.saved_res
-        elif exp2.is_func:
+        elif exp2.is_func and exp2.type not in db.type2table:
             self.saved_res = {ent for ent in exp1.execute(db) if exp2.execute(db)(ent)}
             return self.saved_res
         self.saved_res = exp1.execute(db) & exp2.execute(db)
@@ -312,11 +312,15 @@ class Join(Expression):
 
 class LexEnt(Expression):
     def __init__(self, words, type, span=()):
-        self.words = words
+        self.pcapital = mean([w[0].isupper() for w in words])
+        self.words = [word.lower() for word in words]
+        self.pwords = None
         self.span = span
         self.type = type
         self.is_func = False
         self.saved_res = None
+    
+    #def 
     
     def execute(self, db):
         if self.saved_res:
@@ -330,8 +334,8 @@ class LexEnt(Expression):
             if v is None:
                 self.saved_res = set()
                 return self.saved_res
-            s, d = v
-        #d can be set or dict
+            s, d, p = v
+        self.pwords = p
         self.saved_res = s
         return self.saved_res
     
@@ -346,7 +350,9 @@ class Aggregation(DCS):
         self.rtype = type
         
     def copy(self, span, exp=None):
-        return type(self)(exp or self.exp, span)
+        exp = type(self)(exp or self.exp, span)
+        exp.rtype = self.rtype
+        return exp
 
 
 class Count(Aggregation):
@@ -391,10 +397,13 @@ class Arg(Aggregation):
         self.attr = attr
         self.ext_obj = ext_obj
         self.func = func
-    
+        self.type = rtype    
     
     def execute(self, db):
-        return {self.func(self.exp.execute(db), key=lambda c: getattr(c, self.attr) or self.ext_obj)}
+        ents = self.exp.execute(db)
+        if not ents:
+            return set()
+        return {self.func(self.exp.execute(db), key=lambda c: self.attr(c) or self.ext_obj)}
 
     def __str__(self):
         return 'arg{}_{}{}'.format(func.__name__, self.exp)
@@ -402,7 +411,7 @@ class Arg(Aggregation):
 
 class Earliest(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, OccurenceDTO, 'start_time', inf, min)
+        Arg.__init__(self, exp, span, OccurenceDTO, lambda x: x.start_time, inf, min)
     
     def __str__(self):
         return 'earliest{}'.format(self.exp)
@@ -410,14 +419,14 @@ class Earliest(Arg):
 
 class Latest(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, OccurenceDTO, 'start_time', -inf, max)
+        Arg.__init__(self, exp, span, OccurenceDTO, lambda x: x.start_time, -inf, max)
 
     def __str__(self):
         return 'latest{}'.format(self.exp)
 
 class EarliestMoedA(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_a', future_time, min)
+        Arg.__init__(self, exp, span, MultiCourseDTO, lambda x: x.exam.moed_a, future_time, min)
     
     def __str__(self):
         return 'earliest_moeda{}'.format(self.exp)
@@ -425,14 +434,14 @@ class EarliestMoedA(Arg):
 
 class LatestMoedA(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_a', past_time, max)
+        Arg.__init__(self, exp, span, MultiCourseDTO, lambda x: x.exam.moed_b, past_time, max)
 
     def __str__(self):
         return 'latest_moeda{}'.format(self.exp)
 
 class EarliestMoedB(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_b', future_time, min)
+        Arg.__init__(self, exp, span, MultiCourseDTO, lambda x: x.exam.moed_b, future_time, min)
     
     def __str__(self):
         return 'earliest_moedb{}'.format(self.exp)
@@ -440,7 +449,7 @@ class EarliestMoedB(Arg):
 
 class LatestMoedB(Arg):
     def __init__(self, exp=None, span=[]):
-        Arg.__init__(self, exp, span, MultiCourseDTO, 'moed_b', past_time, max)
+        Arg.__init__(self, exp, span, MultiCourseDTO, lambda x: x.exam.moed_b, past_time, max)
 
     def __str__(self):
         return 'latest_moedb{}'.format(self.exp)

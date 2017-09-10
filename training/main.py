@@ -1,10 +1,10 @@
+from __future__ import division
 import csv
-
 import numpy as np
 
 from db.db import db_instance
 from db.entities import Course, Lecturer, MultiCourse, CourseToLecturer, Occurence
-from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO, OccurenceDTO
+from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO, OccurenceDTO, PhoneDTO
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
 
@@ -16,13 +16,19 @@ except ImportError:
 
 def create_words_dict(ents, func=lambda x: x):
     cache = {}
-
     def create_words_dict(ents, path=()):
-        if len({func(ent).lower() for ent in ents}) == 1:
-            return
+        if all(sorted(path) == sorted(func(ent).lower().split()) for ent in ents):
+            return None, 1
         d = {}
+        p = 0
         for ent in ents:
-            for word in func(ent).lower().split():
+            words = func(ent).lower().split()
+            #remove '' entities
+            if words:
+                curr_p = len(path)/len(words)
+                if curr_p > p:
+                    p = curr_p
+            for word in words:
                 if word not in path:
                     k = tuple(sorted(path + (word,)))
                     old_d = cache.get(k)
@@ -30,14 +36,18 @@ def create_words_dict(ents, func=lambda x: x):
                         d[word] = old_d
                     else:
                         d.setdefault(word, set()).add(ent)
+                        
         for word, v in d.items():
             if type(v) is set:
                 k = tuple(sorted(path + (word,)))
-                new_d = create_words_dict(v, path + (word,))
-                cache[k] = d[word] = v, new_d
-        return d
+                new_d, new_p = create_words_dict(v, path + (word,))
+                if new_p == 1:
+                    v = {ent for ent in v if sorted(path + (word,)) == sorted(func(ent).lower().split())}
+                cache[k] = d[word] = (v, new_d, new_p)
+                
+        return d, p
 
-    return create_words_dict(ents)
+    return create_words_dict(ents)[0]
 
 
 class DBCache(object):
@@ -73,12 +83,13 @@ class DBCache(object):
         # update course objects for all lecturers
         for lecturer in self.lecturers.values():
             lecturer.update_courses(self.courses)
-
+        self.phones = dict()
         for course in self.courses.values():
             for lecturer in course.lecturers:
                 lecturer.update_courses(self.courses)
                 for phone in lecturer.phones:
                     phone.update_phone(self.lecturers)
+                    self.phones[phone.id] = phone
                     
         print 'extract strings from db'
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
@@ -97,7 +108,7 @@ class DBCache(object):
                            CourseDTO: self.courses,
                            OccurenceDTO: self.occurences,
                            LecturerDTO: self.lecturers,
-                           }
+                           PhoneDTO: self.phones}
         self.type2words_dict = {MultiCourseDTO: self.multi_courses_words_dict,
                                 LecturerDTO: self.lecturers_words_dict,
                                 'building': self.buildings_words_dict,
