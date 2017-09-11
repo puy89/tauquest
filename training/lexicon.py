@@ -49,8 +49,8 @@ class Lexicon:
                 'thursday': [Entity(5, 'day')],
                 'friday': [Entity(6, 'day')],
                 'saturday': [Entity(7, 'day')],
-                'after': ['after', '>', '>='],
-                'before': ['before', '<', '<='],
+                'after': ['after', '>', '>=', 'hour>', 'hour>='],
+                'before': ['before', 'hour<', 'hour<='],
            }
 
     def update_lexicon(self, db):
@@ -80,14 +80,14 @@ class Lexicon:
             for lower in xrange(2):
                 if lower:
                     honor = honor.lower()
-                self._lexicon[honor] = [Join('rev_lec_honor', Entity(honor, Unicode))]
+                self._lexicon[honor] = [Join('rev_lec_honor', Entity(honor, 'honor'), is_bridge=True)]
                 if honor[-1] != '.':
-                    self._lexicon[honor+'.'] = [Join('rev_lec_honor', Entity(honor, Unicode))]
+                    self._lexicon[honor+'.'] = [Join('rev_lec_honor', Entity(honor, 'honor'), is_bridge=True)]
                 elif honor[-1] == '.':
-                    self._lexicon[honor[:-1]] = [Join('rev_lec_honor', Entity(honor, Unicode))]
+                    self._lexicon[honor[:-1]] = [Join('rev_lec_honor', Entity(honor, 'honor'), is_bridge=True)]
                 
         for kind in db.kinds:
-            self._lexicon[kind] = [Join('rev_cou_kind', Entity(kind, Unicode))]
+            self._lexicon[kind] = [Join('rev_cou_kind', Entity(kind, 'kind'), is_bridge=True)]
             
             
 

@@ -12,7 +12,7 @@ except ImportError:
 import re
 
 
-time_p = re.compile('([0-2][0-9]):([0-5][0-9])')
+time_p = re.compile('([0-2][0-9])(:([0-5][0-9]))?')
 email_p = re.compile('[a-z0-9A-Z_]@[a-z0-9A-Z_]\\.[a-z0-9A-Z_](\\.[a-z0-9A-Z_])?(\\.[a-z0-9A-Z_])?')
 phone_p = re.compile('([0-9]{2})\\-?([0-9]{7})')
 
@@ -31,12 +31,6 @@ class QuestionsParser:
         self._lexicon = lexicon
         self._feature_extractor = FeatureExtractor(db)
 
-    def bridge(self, sent, exp):#stupid!!!!!!!!!!!!!
-        return [(join, self._feature_extractor.extract_features(sent, join))
-                for pred in type2preds[exp.type]
-                #what sholud have the pred span??? should be? information will pass with structure?
-                for join in [Join(pred.copy(exp.span), exp, span=exp.span)]]
-
     def course_bridge(self, exp, span, sent):
         exps = []
         preds = bridge_dict.get(exp.type)
@@ -44,7 +38,7 @@ class QuestionsParser:
             return exps
         preds, recurrent = preds
         for pred in preds:
-            join = Join(pred.copy(span), exp, span)
+            join = Join(pred.copy(span), exp, span, is_bridge=True)
             if recurrent:
                 exp = join
             exps.append((join, self._feature_extractor.extract_features(sent, join)))
@@ -53,7 +47,9 @@ class QuestionsParser:
     def parse_regexp(self, time):
         match = time_p.match(time)
         if match:
-            h, m = map(int, match.groups())
+            t = match.groups()
+            h = int(t[0])
+            m = int(t[2] or 0)
             return Entity(h*100+m, 'hour')
         match = phone_p.match(time)
         if match:
@@ -79,7 +75,10 @@ class QuestionsParser:
             if terms is not None:
                 if isinstance(terms[0], DCS):
                     for term in terms:
-                        span_exps[i, i].append((term.copy((i, i)), None))
+                        exp = term.copy((i, i))
+                        span_exps[i, i].append((exp, None))
+                        if isinstance(exp, Expression):
+                            span_exps[i, i].extend(self.course_bridge(exp, (i, i), sent))
             else:#only if else????
                 ent = self.parse_regexp(w)
                 if ent is not None:
@@ -88,6 +87,7 @@ class QuestionsParser:
                     exp = LexEnt([w], ent_type, (i, i) )
                     if 0 < len(exp.execute(self._db)) < 20: 
                         span_exps[i, i].append((exp, None))
+                        span_exps[i, i].extend(self.course_bridge(exp, (i, i), sent))
                 
                 
         for l in xrange(1, n):

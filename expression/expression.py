@@ -13,12 +13,16 @@ funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, 'time'),
          '>': (lambda x, y: x is not None and y is not None and x > y, 'time'),
          '<=': (lambda x, y: x is not None and y is not None and x <= y, 'time'),
          '>=': (lambda x, y: x is not None and y is not None and x >= y, 'time'),
+         'hour<': (lambda x, y: x is not None and y is not None and x < y, 'hour'),
+         'hour>': (lambda x, y: x is not None and y is not None and x > y, 'hour'),
+         'hour<=': (lambda x, y: x is not None and y is not None and x <= y, 'hour'),
+         'hour>=': (lambda x, y: x is not None and y is not None and x >= y, 'hour'),
          'date_after': (lambda x, y: x is not None and y is not None and x < y, datetime),
          'date_before': (lambda x, y: x is not None and y is not None and x > y, datetime),
          'date_aftereq': (lambda x, y: x is not None and y is not None and x <= y, datetime),
          'date_beforeq': (lambda x, y: x is not None and y is not None and x >= y, datetime),
-         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time[1] >= y.end_time[1], OccurenceDTO),
-         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time[1] >= x.end_time[1], OccurenceDTO),#symmteric?
+         'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, OccurenceDTO),
+         'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, OccurenceDTO),#symmteric?
          'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or                                                                                   x.start_time <= y.start_time < x.end_time) , CourseDTO),
          'contains': (lambda x, y: x is not None and y is not None and y in x, String),
          'contained': (lambda x, y: x is not None and y is not None and x in y, String),
@@ -243,9 +247,10 @@ class Predicate(BasePredicate):
 
 
 class Join(Expression):
-    def __init__(self, pred, un, span=(), pred_span=()):
+    def __init__(self, pred, un, span=(), pred_span=(), is_bridge=False):
         self.un = un
         self.span = span
+        self.is_bridge = is_bridge
         if isinstance(pred, str):
             self.pred = Predicate(pred, pred_span)
         else:

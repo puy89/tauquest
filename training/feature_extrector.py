@@ -24,19 +24,23 @@ class FeatureExtractor:
         i = 0
         counts = [0, 0]
         joins = []
-        intersects = []
+        n_intersects = [0]
+        bridges = []
         skips = []
         lex_ents_feats = [0]
         def dfs(node):
             if type(node) is Join:
-                joins.append((node.pred.span[0], node.un.span[0]))
+                if node.is_bridge:
+                    bridges.append((node.pred.span[0], node.un.span[0]))
+                else:
+                    joins.append((node.pred.span[0], node.un.span[0]))
                 left_bound = min(node.pred.span[0], node.un.span[0]) + 1
                 right_bound = max(node.pred.span[0], node.un.span[0])
                 if right_bound > left_bound:
                     skips.append((left_bound, right_bound))
                 dfs(node.un)
             if type(node) is Intersect:
-                intersects.append((node.exp1.span[0], node.exp2.span[0]))
+                n_intersects[0] += 1
                 left_bound = min(node.exp1.span[0], node.exp2.span[0]) + 1
                 right_bound = max(node.exp1.span[0], node.exp2.span[0])
                 if right_bound > left_bound:
@@ -46,7 +50,7 @@ class FeatureExtractor:
                 # TODO bridge
             if type(node) is LexEnt:
                 assert node.pwords is not None
-                feats[:2] += node.pcapital, node.pwords
+                feats[i:i+2] += node.pcapital, node.pwords
         if exp.span[0] > 0:
             skips.append((0, exp.span[0]))
         if exp.span[1] < len(sent)-1:
@@ -55,10 +59,11 @@ class FeatureExtractor:
         dfs(exp)
         i += 2
         # Rule features
-        # TODO bridge
         feats[i] = len(joins);
         i += 1
-        feats[i] = len(intersects);
+        feats[i] = len(bridges);
+        i += 1
+        feats[i] = n_intersects[0]
         i += 1
         # skip POS
         for left_bound, right_bound in skips:
@@ -69,7 +74,7 @@ class FeatureExtractor:
         for join in joins:
             idx = pair_pos2idx[sent[join[0]][1], sent[join[1]][1]]
             feats[i + idx] = 1
-        for intersect in intersects:
+        for intersect in bridges:
             idx = pair_pos2idx[sent[intersect[0]][1], sent[intersect[1]][1]]
             feats[i + idx] = 1
         i += len(all_poss) ** 2
