@@ -73,6 +73,8 @@ class QuestionsParser:
             terms = self._lexicon.get(w, self._lexicon.get(w[:-1]))#he she it does
             span_exps[i, i] = []
             if terms is not None:
+                if not terms:
+                    continue
                 if isinstance(terms[0], DCS):
                     for term in terms:
                         exp = term.copy((i, i))

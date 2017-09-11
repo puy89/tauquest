@@ -14,6 +14,9 @@ class Lexicon:
                 'department': ['mul_department', 'mul_faculty'],
                 'faculty': ['mul_faculty', 'mul_department'],
                 'when': ['occ_day', 'occ_start_time', 'mul_semester'],# add full time
+                'what': [],
+                'is': [],
+                'the': [],
                 'day': ['occ_day'],
                 'in': ['occ_place', 'mul_semester', 'occ_building', 'mul_department', 'mul_faculty'],
                 'on': ['occ_day', 'occ_place', 'mul_semester', 'occ_building', 'mul_department', 'mul_faculty'],

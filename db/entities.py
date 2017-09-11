@@ -46,8 +46,8 @@ class Occurence(db_instance._base):
     start_time = Column(Integer, nullable=True)
     end_time = Column(Integer, nullable=True)
     day = Column(Integer, nullable=True)
-    place = Column(Unicode(250), nullable=False)
-    building = Column(Unicode(250), nullable=False)
+    place = Column(Unicode(250), nullable=True)
+    building = Column(Unicode(250), nullable=True)
     course_id = Column(Integer, ForeignKey("course.id"))
 
 

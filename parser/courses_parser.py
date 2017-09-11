@@ -31,26 +31,12 @@ def parse_courses(lecturers):
         courses_rows = csv.reader(courses_file)
 
         for course_row in courses_rows:
-            course_time = course_row[title2idx['time']].split('-')
-            if len(course_time) == 2:
-                end_time, start_time = map(int, course_time)
-            else:
-                start_time = end_time = None
-
-            if len(course_row[title2idx['day']]):
-                course_day = 1 + ord(course_row[title2idx['day']][1]) - 0x90
-            else:
-                course_day = None
-            building = building_heb2en.get(unicode(course_row[title2idx['building']]), '')
-            faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
+                
             course_id = course_row[title2idx['course_id']]
-            moed_a, moed_b = course2test[course_id.replace('-', '')]
-
             multi_course_id = course_id[:-3]
             course_group_id = course_id[-2:]
 
-            course = Course(course_group_id=course_group_id,
-                            kind=unicode(kind_heb2en[unicode(course_row[title2idx['kind']])]))
+            course = Course(course_group_id=course_group_id)
             names = set(course_row[title2idx['lecturer']].lstrip().rstrip().split('#'))
             for name in names:
                 if not name:
@@ -75,15 +61,34 @@ def parse_courses(lecturers):
                     course_to_lecturer_mapping.lecturer = lecturer
                     course_to_lecturer_mapping.course = course
                     course.lecturers.append(course_to_lecturer_mapping)
+            
+            
+            for b, p, t, d, k in zip(*[unicode(course_row[title2idx[col]]).split('#') 
+                                       for col in ['building', 'place', 'time', 'day', 'kind']]):
+                building = building_heb2en.get(b, '')
+                
+                course_time = t.split('-')
+                if len(course_time) == 2:
+                    end_time, start_time = map(int, course_time)
+                else:
+                    start_time = end_time = None
 
-            occurence = Occurence(day=course_day,
-                                  start_time=start_time,
-                                  end_time=end_time,
-                                  place=unicode(course_row[title2idx['place']]),
-                                  building=unicode(building))
-            course.occurences.append(occurence)
+                if len(d):
+                    course_day = 1 + ord(course_row[title2idx['day']][1]) - 0x90
+                else:
+                    course_day = None
+                kind = k
+                
+                occurence = Occurence(day=course_day,
+                                      start_time=start_time,
+                                      end_time=end_time,
+                                      place=p or None,
+                                      building=b or None)
+                course.occurences.append(occurence)
+            course.kind = kind
             courses.append(course)
-
+            faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
+            moed_a, moed_b = course2test[course_id.replace('-', '')]
             multi_course = None
             if multi_course_id in multi_courses.keys():
                 multi_course = multi_courses[multi_course_id]
