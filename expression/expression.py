@@ -47,8 +47,10 @@ dto2name = {dto_cl: k for k, (dto_cl, cl) in name2cls.iteritems()}
 
 types_name = {v: k for k, v in name_types.items()}
 
-pred2type = dict(start_time='time',
-                 end_time='time',
+pred2type = dict(start_time='hour',
+                 end_time='hour',
+                 full_start_time='time',
+                 full_end_time='time',
                  department='department',
                  faculty='faculty',
                  semsester='semsester',

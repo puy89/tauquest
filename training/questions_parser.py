@@ -54,7 +54,7 @@ class QuestionsParser:
         match = time_p.match(time)
         if match:
             h, m = map(int, match.groups())
-            return Entity(h*100+m, 'time')
+            return Entity(h*100+m, 'hour')
         match = phone_p.match(time)
         if match:
             pre, phone = match.groups()
