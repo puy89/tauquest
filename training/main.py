@@ -120,8 +120,17 @@ class DBCache(object):
 def load_dataset():
     with open('files/questions-answers.csv') as f:
         r = csv.reader(f)
-        questions, answers = np.array(
-            [(row[0], set(map(unicode, row[1:next(i for i, cell in enumerate(row) if cell == '')]))) for row in r]).T
+        questions = []
+        answers = []
+        r.next()#next titles row
+        for row in r:
+            questions.append(row[1])
+            anss = row[2].split('#')
+            if len(anss) > 1:
+                answers.append(set(map(unicode, anss)))
+            else:
+                answers.append({unicode(cell) if cell != 'None' else None
+                                for cell in row[1:next(i for i, cell in enumerate(row) if cell == '')]})
         return questions, answers
 
 
@@ -136,14 +145,14 @@ def pretty_print_result(question, result):
             print(u"\t{0}".format(r))
 
 
-def main():
+def main(iters=100):
     db_cache = DBCache()
     lexicon = Lexicon()
     lexicon.update_lexicon(db_cache)
     questions, answers = load_dataset()
     trainer = QuestionsAnswersTrainer(db_cache, lexicon.lexicon)
 
-    theta = trainer.train(questions, answers, iters=100)
+    theta = trainer.train(questions, answers, iters=iters)
     print(theta)
 
     pretty_print_result(questions[0], trainer.eval(questions[0], theta))

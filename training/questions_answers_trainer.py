@@ -1,31 +1,40 @@
 from datetime import datetime
 import numpy as np
-from dto.dtos import CourseDTO, LecturerDTO
+from dto.dtos import MultiCourseDTO, LecturerDTO
 from questions_parser import QuestionsParser
 from training.feature_extrector import NUMBER_OF_FEATURES
-
-
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = lambda x: x
+    
 class QuestionsAnswersTrainer:
     def __init__(self, db, lexicon):
         self._db = db
         self._lexicon = lexicon
         self._questions_parser = QuestionsParser(db, self._lexicon)
 
-    def adagrad(self, gradient, x0, step, iterations, PRINT_EVERY=10):
+    def adagrad(self, gradient, x0, step, iterations, adaptive=False):
         eps = 1e-06
         ANNEAL_EVERY = 20000
         x = x0
         expcost = None
         begin = datetime.now()
         G = np.zeros_like(x0, float)
-        for iter in xrange(0 + 1, iterations + 1):
+        for iter in tqdm(range(0 + 1, iterations + 1)):
             # Don't forget to apply the postprocessing after every iteration!
             # You might want to print the progress every few iterations.
             cost = None
             ### YOUR CODE HERE
             grad = gradient(x)
+            if grad is None:
+                print 'gradient is None'
+                continue
             G += grad ** 2
-            x -= step * grad / (np.sqrt(G) + eps)
+            direct = step * grad
+            if adaptive:
+                direct /= (np.sqrt(G) + eps)
+            x -= direct
             ### END YOUR CODE
 
 
@@ -35,13 +44,14 @@ class QuestionsAnswersTrainer:
         return x
 
     @staticmethod
-    def is_write_answer(exp, db, expected_answers):
+    def is_right_answer(exp, db, expected_answers):
         results = exp.execute(db)
-
-        if isinstance(next(iter(results)), CourseDTO):
+        if type(results) != set:
+            return False
+        if isinstance(exp, MultiCourseDTO):
             return {course.name for course in results} == expected_answers
 
-        elif isinstance(next(iter(results)), LecturerDTO):
+        elif isinstance(exp, LecturerDTO):
             return {lecturer.name for lecturer in results} == expected_answers
 
         else:
@@ -55,16 +65,26 @@ class QuestionsAnswersTrainer:
             exps, feats = np.array(self._questions_parser.parse_sent(quests[i], theta, k)).T
             feats = np.array([feat for feat in feats], float)
             ps = np.exp(feats.dot(theta))
-            agree = [self.is_write_answer(exp, self._db, ans[i]) for exp in exps]
-            assert any(agree)
+            agree = [self.is_right_answer(exp, self._db, ans[i]) for exp in exps]
+            if not any(agree):
+                return None
             unnormed = ps * agree
             qs = unnormed / unnormed.sum()
-            return feats.T.dot(qs - ps)
+            grad = feats.T.dot(qs - ps)
+            assert not np.isnan(grad).any()
+            return grad
 
         iters = iters or len(quests)
-        return self.adagrad(gradient, np.zeros(NUMBER_OF_FEATURES), 0.01, iters)
+        self.theta = self.adagrad(gradient, np.zeros(NUMBER_OF_FEATURES), 0.01, iters)
+        return self.theta
 
-    def eval(self, question, theta, k=100):
+    def eval(self, question, theta=None, k=100):
+        theta = theta or self.theta
         exps, feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
         feats = np.array([feat for feat in feats], float)
         return exps[0].execute(self._db)
+    
+    def get_exps(self, question, theta=None, k=100):
+        theta = theta or self.theta
+        exps, _feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
+        return exps
