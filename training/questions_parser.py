@@ -117,14 +117,13 @@ class QuestionsParser:
                         for left, _ in span_exps[i, m]:
                             for right, _ in span_exps[h, j]:
                                 exp = None
-                                (dcs1, type1), (dcs2, type2) = sorted(((left, type(left).__bases__[0]),
-                                                                       (right, type(right).__bases__[0])), key=lambda (dcs, type): type != Expression)
-                                if type1 == Expression:
-                                    if type2 == BasePredicate:
+                                dcs1, dcs2 = sorted((left, right), key=lambda dcs: not isinstance(dcs, Expression))
+                                if isinstance(dcs1, Expression):
+                                    if isinstance(dcs2, BasePredicate):
                                         if dcs1.type == dcs2.rtype and not (
                                                     dcs1.is_func and dcs2.is_func):
                                             exp = Join(dcs2, dcs1, (i, j), (i, m))        
-                                    elif type2 == Expression:
+                                    elif isinstance(dcs2, Expression):
                                         if dcs1.type == dcs2.type and not type(dcs1) == type(dcs2) == LexEnt:
                                             exp = Intersect(dcs1, dcs2, (i, j))
                                     elif isinstance(dcs2, Aggregation) and dcs2.exp is None:

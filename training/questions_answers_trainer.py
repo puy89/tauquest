@@ -62,11 +62,16 @@ class QuestionsAnswersTrainer:
     def train(self, quests, ans, k=1000, iters=None):
         def gradient(theta):
             i = np.random.randint(0, len(quests))
-            exps, feats = np.array(self._questions_parser.parse_sent(quests[i], theta, k)).T
+            exps = self._questions_parser.parse_sent(quests[i], theta, k)
+            if len(exps) == 0:
+                print quests[i], 'no derivations'
+                return None
+            exps, feats = np.array(exps).T
             feats = np.array([feat for feat in feats], float)
             ps = np.exp(feats.dot(theta))
             agree = [self.is_right_answer(exp, self._db, ans[i]) for exp in exps]
             if not any(agree):
+                print quests[i], 'no good derivations'
                 return None
             unnormed = ps * agree
             qs = unnormed / unnormed.sum()

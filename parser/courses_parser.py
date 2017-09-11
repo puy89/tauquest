@@ -65,7 +65,7 @@ def parse_courses(lecturers):
             
             for b, p, t, d, k in zip(*[unicode(course_row[title2idx[col]]).split('#') 
                                        for col in ['building', 'place', 'time', 'day', 'kind']]):
-                building = building_heb2en.get(b, '')
+                building = unicode(building_heb2en.get(b))
                 
                 course_time = t.split('-')
                 if len(course_time) == 2:
@@ -83,7 +83,7 @@ def parse_courses(lecturers):
                                       start_time=start_time,
                                       end_time=end_time,
                                       place=p or None,
-                                      building=b or None)
+                                      building=building)
                 course.occurences.append(occurence)
             course.kind = kind
             courses.append(course)
