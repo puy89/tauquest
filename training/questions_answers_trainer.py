@@ -38,6 +38,9 @@ class QuestionsAnswersTrainer:
     def is_write_answer(exp, db, expected_answers):
         results = exp.execute(db)
 
+        if len(results) == 0:
+            return False
+
         if isinstance(next(iter(results)), CourseDTO):
             return {course.name for course in results} == expected_answers
 
@@ -56,9 +59,11 @@ class QuestionsAnswersTrainer:
             feats = np.array([feat for feat in feats], float)
             ps = np.exp(feats.dot(theta))
             agree = [self.is_write_answer(exp, self._db, ans[i]) for exp in exps]
-            assert any(agree)
             unnormed = ps * agree
-            qs = unnormed / unnormed.sum()
+            if unnormed.sum() == 0:
+                qs = 0
+            else:
+                qs = unnormed / unnormed.sum()
             return feats.T.dot(qs - ps)
 
         iters = iters or len(quests)

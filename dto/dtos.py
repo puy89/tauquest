@@ -1,4 +1,9 @@
+import abc
+
+
 class DTOClass(object):
+    __metaclass__ = abc.ABCMeta
+
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
 
@@ -8,10 +13,16 @@ class DTOClass(object):
     def __eq__(self, other):
         return self.id == other.id
 
+    def __str__(self):
+        args = self.get_args()
+        values_dict = self.__dict__
+        return ', '.join("{0}: {1}".format(arg, values_dict[arg]) for arg in args)
+
+    @abc.abstractmethod
+    def get_args(self):
+        return
 
 class CourseToLecturerDTO(DTOClass):
-    __tablename__ = 'course_to_lecturer'
-
     def __init__(self, c):
         self.__dict__ = dict(c.__dict__)
 
@@ -26,6 +37,13 @@ class ExamDTO(DTOClass):
     def update_exam(self, multi_courses_map):
         self.multi_course = multi_courses_map.get(self.multi_course)
 
+    def get_args(self):
+        return [self.id, self.moed_a, self.moed_b]
+
+
+    def get_args(self):
+        return ["id", "moed_a", "moed_b"]
+
 class MultiCourseDTO(DTOClass):
     def __init__(self, c):
         self.id = c.id
@@ -39,12 +57,16 @@ class MultiCourseDTO(DTOClass):
         self.faculty = c.faculty
         self.semester = c.semester
 
+    def get_args(self):
+        return ["id", "multi_course_id", "exam", "courses", "name", "department",
+                "faculty", "semester"]
+
 
 class OccurenceDTO(DTOClass):
     def __init__(self, c):
         self.id = c.id
         self.start_time = c.start_time
-        self.end_time = c.end_time        
+        self.end_time = c.end_time
         self.full_start_time = c.day, c.start_time
         self.full_end_time = c.day, c.end_time
         self.day = c.day
@@ -54,6 +76,10 @@ class OccurenceDTO(DTOClass):
 
     def update_occurence(self, courses_map):
         self.course = courses_map.get(self.course)
+
+    def get_args(self):
+        return ["id", "start_time", "full_start_time", "full_end_time", "place", "building"]
+
 
 class CourseDTO(DTOClass):
     def __init__(self, c):
@@ -67,6 +93,9 @@ class CourseDTO(DTOClass):
     def update_course(self, multi_courses_map):
         self.multi_course = multi_courses_map.get(self.multi_course)
 
+    def get_args(self):
+        return ["id", "course_group_id", "kind", "occurences", "lecturers"]
+
 
 class PhoneDTO(DTOClass):
     def __init__(self, c):
@@ -76,6 +105,10 @@ class PhoneDTO(DTOClass):
 
     def update_phone(self, lecturers_map):
         self.lecturer = lecturers_map.get(self.lecturer)
+
+    def get_args(self):
+        return ["id", "phone"]
+
 
 class LecturerDTO(DTOClass):
     def __init__(self, c):
@@ -94,3 +127,7 @@ class LecturerDTO(DTOClass):
 
     def update_courses(self, course_id_to_course_map):
         self.courses = [course_id_to_course_map[id] for id in self.courses]
+
+    def get_args(self):
+        return ["id", "name", "site", "email", "office_building", "office", "phones", "fax", "title",
+                "honor"]

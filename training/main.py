@@ -1,10 +1,11 @@
 from __future__ import division
 import csv
+
 import numpy as np
 
 from db.db import db_instance
-from db.entities import Course, Lecturer, MultiCourse, CourseToLecturer, Occurence
-from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, CourseToLecturerDTO, OccurenceDTO, PhoneDTO
+from db.entities import Lecturer, MultiCourse
+from dto.dtos import CourseDTO, LecturerDTO, MultiCourseDTO, OccurenceDTO, PhoneDTO
 from training.lexicon import Lexicon
 from training.questions_answers_trainer import QuestionsAnswersTrainer
 
@@ -144,13 +145,9 @@ def main():
     trainer = QuestionsAnswersTrainer(db_cache, lexicon.lexicon)
 
     theta = trainer.train(questions, answers, iters=100)
-    print(theta)
 
-    pretty_print_result(questions[0], trainer.eval(questions[0], theta))
-    pretty_print_result(questions[1], trainer.eval(questions[1], theta))
-    pretty_print_result(questions[2], trainer.eval(questions[2], theta))
-    pretty_print_result(questions[3], trainer.eval(questions[3], theta))
-    pretty_print_result(questions[4], trainer.eval(questions[4], theta))
+    print("saving theta to file")
+    np.save("files/theta", theta)
 
 
 if __name__ == '__main__':
