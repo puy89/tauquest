@@ -26,8 +26,11 @@ class Lexicon:
                 'number': ['lec_phones', 'pho_phone', 'lec_fax', 'occ_place', 'mul_id'],
                 'room': ['lec_office', 'occ_place'],
                 'where': ['occ_place', 'occ_building', 'lec_office', 'lec_office_building'],
+                'locate': ['occ_place', 'occ_building', 'lec_office', 'lec_office_building'],
+                'location': ['occ_place', 'occ_building', 'lec_office', 'lec_office_building'],
                 'building': ['occ_building', 'lec_office_building', 'occ_place', 'lec_office'],
                 'place': ['occ_place'],  # TODO: change place to room, add full adress
+                
                 'semester': ['occ_semester'],
                 'kind': ['cou_kind'],
                 'end': ['occ_full_end_time'],

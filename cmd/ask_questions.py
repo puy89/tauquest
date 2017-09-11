@@ -1,4 +1,5 @@
 import sys
+import traceback
 import numpy as np
 from training.lexicon import Lexicon
 from training.main import DBCache
@@ -27,6 +28,7 @@ def main(argv):
 
         except Exception as e:
             print("\tSorry, couldn't answer this question")
+            traceback.print_exc()
 
 
 if __name__ == '__main__':
