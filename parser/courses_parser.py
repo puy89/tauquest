@@ -29,7 +29,6 @@ def parse_courses(lecturers):
     multi_courses = dict()
     with open('files/courses.csv') as courses_file:
         courses_rows = csv.reader(courses_file)
-
         for course_row in courses_rows:
                 
             course_id = course_row[title2idx['course_id']]
@@ -44,15 +43,23 @@ def parse_courses(lecturers):
                 words = unicode(name.replace('-', ' ')).split(
                     ' ')
                 honor = honor_heb2en.get(words[0])
-                if honor is None:
-                    lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))
-                else:
-                    lecturer_name = unicode(' '.join(words[-1:] + words[1:-1]))
+                if honor is not None:
+                    words = words[1:]
+                lecturer_name = unicode(' '.join(words[1:] + words[:1]))
                 lecturer = lecturers.get(lecturer_name)
+                if lecturer is None:
+                    lecturer_name = unicode(' '.join(words[-2:] + words[:-2]))
+                    lecturer = lecturers.get(lecturer_name)
+                if lecturer is None:
+                    lecturer_name = unicode(' '.join(words[-1:] + words[:-1]))
+                    lecturer = lecturers.get(lecturer_name)
+                
+                en_name = names_heb2en[lecturer_name]
+                
                 if lecturer is None:
                     if lecturer_name.rstrip():
                         lecturer = Lecturer(hebrew_name=lecturer_name, honor=honor,
-                                            name=names_heb2en.get(lecturer_name, ''), courses=[])
+                                            name=en_name, courses=[])
                         lecturers[lecturer_name] = lecturer
                 elif lecturer.honor is None:
                     lecturer.honor = honor
@@ -107,5 +114,4 @@ def parse_courses(lecturers):
             exam = Exam(moed_a=moed_a,
                         moed_b=moed_b)
             multi_course.exam = exam
-
     return multi_courses, courses, lecturers

@@ -14,16 +14,17 @@ try:
 except ImportError:
     tqdm = lambda x: x
 
-
+to_words = lambda s: s.replace('-', ' ').lower().split()
+    
 def create_words_dict(ents, func=lambda x: x):
     cache = {}
     def create_words_dict(ents, path=()):
-        if all(sorted(path) == sorted(func(ent).lower().split()) for ent in ents):
+        if all(sorted(path) == sorted(to_words(func(ent))) for ent in ents):
             return None, 1
         d = {}
         p = 0
         for ent in ents:
-            words = func(ent).lower().split()
+            words = to_words(func(ent))
             #remove '' entities
             if words:
                 curr_p = len(path)/len(words)
@@ -43,7 +44,7 @@ def create_words_dict(ents, func=lambda x: x):
                 k = tuple(sorted(path + (word,)))
                 new_d, new_p = create_words_dict(v, path + (word,))
                 if new_p == 1:
-                    v = {ent for ent in v if sorted(path + (word,)) == sorted(func(ent).lower().split())}
+                    v = {ent for ent in v if sorted(path + (word,)) == sorted(to_words(func(ent)))}
                 cache[k] = d[word] = (v, new_d, new_p)
                 
         return d, p

@@ -48,10 +48,10 @@ class QuestionsAnswersTrainer:
         results = exp.execute(db)
         if type(results) != set:
             return False
-        if isinstance(exp, MultiCourseDTO):
+        if exp.type == MultiCourseDTO:
             return {course.name for course in results} == expected_answers
 
-        elif isinstance(exp, LecturerDTO):
+        elif exp.type == LecturerDTO:
             return {lecturer.name for lecturer in results} == expected_answers
 
         else:

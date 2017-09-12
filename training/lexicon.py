@@ -18,6 +18,7 @@ class Lexicon:
                 'is': [],
                 'the': [],
                 'which': [],
+                'do': [],
                 'day': ['occ_day'],
                 'in': ['occ_place', 'mul_semester', 'occ_building', 'mul_department', 'mul_faculty'],
                 'on': ['occ_day', 'occ_place', 'mul_semester', 'occ_building', 'mul_department', 'mul_faculty'],
