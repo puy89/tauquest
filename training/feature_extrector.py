@@ -28,20 +28,22 @@ class FeatureExtractor:
         bridges = []
         skips = []
         lex_ents_feats = [0]
+        pcapitals = []
+        pwords = []
         def dfs(node):
             if type(node) is Join:
                 if node.is_bridge:
                     bridges.append((node.pred.span[0], node.un.span[0]))
                 else:
                     joins.append((node.pred.span[0], node.un.span[0]))
-                left_bound = min(node.pred.span[0], node.un.span[0]) + 1
+                left_bound = min(node.pred.span[1], node.un.span[1]) + 1
                 right_bound = max(node.pred.span[0], node.un.span[0])
                 if right_bound > left_bound:
                     skips.append((left_bound, right_bound))
                 dfs(node.un)
             if type(node) is Intersect:
                 n_intersects[0] += 1
-                left_bound = min(node.exp1.span[0], node.exp2.span[0]) + 1
+                left_bound = min(node.exp1.span[1], node.exp2.span[1]) + 1
                 right_bound = max(node.exp1.span[0], node.exp2.span[0])
                 if right_bound > left_bound:
                     skips.append((left_bound, right_bound))
@@ -50,14 +52,19 @@ class FeatureExtractor:
                 # TODO bridge
             if type(node) is LexEnt:
                 assert node.pwords is not None
-                feats[i:i+2] += node.pcapital, node.pwords
+                pcapitals.append(node.pcapital)
+                pwords.append(node.pwords)
         if exp.span[0] > 0:
             skips.append((0, exp.span[0]))
         if exp.span[1] < len(sent)-1:
             skips.append((exp.span[1], len(sent)))
-        #lexicon features
         dfs(exp)
-        i += 2
+        
+        #lexicon features
+        feats[i] = np.mean(pcapitals or 0)
+        i += 1
+        feats[i] = np.mean(pwords or 0)
+        i += 1
         # Rule features
         feats[i] = len(joins);
         i += 1

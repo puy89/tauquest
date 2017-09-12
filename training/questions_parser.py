@@ -103,6 +103,9 @@ class QuestionsParser:
                         if 0 < len(exp.execute(self._db)) < 20: 
                             span_exps[i, j].append((exp, None))
                             span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
+                            if len(exp.execute(self._db)) == 1:
+                                for m in xrange(i, j+1):
+                                    span_exps[m, m] = []
         #after for: clear short span contained in probably good names?
         largest_spans = []
         max_span_size = 0
