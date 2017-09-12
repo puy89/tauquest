@@ -138,6 +138,6 @@ class QuestionsParser:
                                             
                 #bridge
                 #exps.extend([join for exp, _ in exps if isinstance(exp, Expression) for join in self.bridge(sent, exp)])
-                exps.sort(key=lambda (exp, feats): feats.dot(theta) if feats is not None else -np.inf)
-                span_exps[i, j] = exps[-k:]
-        return sorted(((exp, feats) for exps in span_exps.values() for (exp, feats) in exps if feats is not None), key=lambda (exp, feats): feats.dot(theta))[-k:]
+                exps.sort(reverse=True, key=lambda (exp, feats): feats.dot(theta) if feats is not None else -np.inf)
+                span_exps[i, j] = exps[:k]
+        return sorted(((exp, feats) for exps in span_exps.values() for (exp, feats) in exps if feats is not None), key=lambda (exp, feats): feats.dot(theta), reverse=True)[:k]

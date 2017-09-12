@@ -72,6 +72,8 @@ class OccurenceDTO(DTOClass):
         self.day = c.day
         self.place = c.place
         self.building = c.building
+        self.full_place = (c.building or '') + ' ' + (c.place or '')
+        self.full_place = self.full_place.lstrip().rstrip() or None
         self.course = c.course_id
 
     def update_occurence(self, courses_map):
@@ -119,6 +121,8 @@ class LecturerDTO(DTOClass):
         self.email = c.email
         self.office_building = c.office_building
         self.office = c.office
+        self.full_office = (c.office_building or '') + ' ' + (c.office or '')
+        self.full_office = self.full_office.lstrip().rstrip() or None
         self.phones = [PhoneDTO(phone) for phone in c.phones]
         self.fax = c.fax
         self.title = c.title
