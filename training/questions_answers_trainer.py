@@ -55,7 +55,7 @@ class QuestionsAnswersTrainer:
             return {lecturer.name for lecturer in results} == expected_answers
 
         else:
-            return {res for res in results} == expected_answers
+            return set(map(unicode, results)) == expected_answers
 
         return False
 

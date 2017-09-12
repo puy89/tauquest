@@ -135,8 +135,8 @@ def load_dataset():
             if len(anss) > 1:
                 answers.append(set(map(unicode, anss)))
             else:
-                answers.append({unicode(cell) if cell != 'None' else None
-                                for cell in row[2:next((i for i, cell in enumerate(row) if i > 0 and cell == ''), None)]})
+                answers.append({unicode(cell) for cell in row[2:next((i for i, cell in enumerate(row)
+                                                                      if i > 0 and cell == ''), None)]})
         return questions, answers
 
 
