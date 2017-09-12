@@ -97,11 +97,12 @@ class QuestionsParser:
             for i in xrange(0, n - l):
                 j = i + l
                 span_exps[i, j] = []
-                for ent_type in self._db.type2words_dict:
-                    exp = LexEnt(words[i: j+1], ent_type, (i, j) )
-                    if 0 < len(exp.execute(self._db)) < 20: 
-                        span_exps[i, j].append((exp, None))
-                        span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
+                if not all(word.lower() in self._lexicon for word in words[i: j+1]):
+                    for ent_type in self._db.type2words_dict:
+                        exp = LexEnt(words[i: j+1], ent_type, (i, j))
+                        if 0 < len(exp.execute(self._db)) < 20: 
+                            span_exps[i, j].append((exp, None))
+                            span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
         #after for: clear short span contained in probably good names?
         largest_spans = []
         max_span_size = 0

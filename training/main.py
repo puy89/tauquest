@@ -14,17 +14,18 @@ try:
 except ImportError:
     tqdm = lambda x: x
 
-to_words = lambda s: s.replace('-', ' ').lower().split()
+clear = lambda s: s.replace('-', ' ').lower()
     
-def create_words_dict(ents, func=lambda x: x):
+def create_words_dict(ents, func=lambda x: x, ordered=False):
     cache = {}
     def create_words_dict(ents, path=()):
-        if all(sorted(path) == sorted(to_words(func(ent))) for ent in ents):
+        if all(sorted(path) == sorted(clear(func(ent)).split()) for ent in ents):
             return None, 1
         d = {}
         p = 0
         for ent in ents:
-            words = to_words(func(ent))
+            clean = clear(func(ent))
+            words = clean.split()
             #remove '' entities
             if words:
                 curr_p = len(path)/len(words)
@@ -32,11 +33,14 @@ def create_words_dict(ents, func=lambda x: x):
                     p = curr_p
             for word in words:
                 if word not in path:
-                    k = tuple(sorted(path + (word,)))
-                    old_d = cache.get(k)
-                    if old_d is not None:
-                        d[word] = old_d
-                    else:
+                    if not ordered:
+                        k = tuple(sorted(path + (word,)))
+                        old_d = cache.get(k)
+                        if old_d is not None:
+                            d[word] = old_d
+                        else:
+                            d.setdefault(word, set()).add(ent)
+                    elif ' '.join(path + (word,)) in clean:
                         d.setdefault(word, set()).add(ent)
                         
         for word, v in d.items():
@@ -44,7 +48,7 @@ def create_words_dict(ents, func=lambda x: x):
                 k = tuple(sorted(path + (word,)))
                 new_d, new_p = create_words_dict(v, path + (word,))
                 if new_p == 1:
-                    v = {ent for ent in v if sorted(path + (word,)) == sorted(to_words(func(ent)))}
+                    v = {ent for ent in v if sorted(path + (word,)) == sorted(clear(func(ent)).split())}
                 cache[k] = d[word] = (v, new_d, new_p)
                 
         return d, p
@@ -97,7 +101,7 @@ class DBCache(object):
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
         self.kinds = {l.kind for l in self.courses.values() if l.kind is not None}
         print 'creating words trees'
-        self.multi_courses_words_dict = create_words_dict(self.multi_courses.values(), lambda x: x.name)
+        self.multi_courses_words_dict = create_words_dict(self.multi_courses.values(), lambda x: x.name, True)
         self.lecturers_words_dict = create_words_dict(self.lecturers.values(), lambda x: x.name)
         self.buildings_words_dict = create_words_dict(
             {l.office_building for l in self.lecturers.values() if l.office_building is not None} |

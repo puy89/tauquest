@@ -84,7 +84,7 @@ class QuestionsAnswersTrainer:
         return self.theta
 
     def eval(self, question, theta=None, k=100):
-        theta = theta or self.theta
+        theta = self.theta if theta is None else theta
         exps, feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
         feats = np.array([feat for feat in feats], float)
         return exps[0].execute(self._db)
