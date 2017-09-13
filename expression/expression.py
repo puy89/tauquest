@@ -23,7 +23,8 @@ funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, 'time'),
          'date_beforeq': (lambda x, y: x is not None and y is not None and x >= y, datetime),
          'after': (lambda x, y: x is not None and y is not None and x.day == y.day and x.start_time >= y.end_time, OccurenceDTO),
          'before': (lambda x, y: x is not None and y is not None and x.day == y.day and y.start_time >= x.end_time, OccurenceDTO),#symmteric?
-         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or                                                                                   x.start_time <= y.start_time < x.end_time) , CourseDTO),
+         'intersect': (lambda x, y: x is not None and y is not None and x.day == y.day and (y.start_time <= x.start_time < y.end_time or
+                                                                                            x.start_time <= y.start_time < x.end_time) , OccurenceDTO),
          'contains': (lambda x, y: x is not None and y is not None and y in x, String),
          'contained': (lambda x, y: x is not None and y is not None and x in y, String),
          'startswith': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
@@ -69,6 +70,11 @@ pred2type = dict(start_time='hour',
                 )
 pred2type.update({k: dto for k, (dto, _) in name2cls.iteritems()})
 pred2type.update({k+'s': dto for k, (dto, _) in name2cls.iteritems()})
+
+type2convert = dict(hour=int,
+                   time=lambda s: tuple(map(int, s.split(','))),
+                   day=int,
+                   semester=int)
 
 course_comopsed_pred = {}
 '''
@@ -438,6 +444,7 @@ aggregats = dict(min=Min,
 aggregat_p = re.compile('({})\\(.+\\)'.format('|'.join(aggregats)))
 
 # TO DO: argmin argmax?
+ops = '&.:@'
 
 def parse_dcs(exp):
     in_parents = exp[0] == '(' and exp[-1] == ')'
@@ -448,30 +455,34 @@ def parse_dcs(exp):
         aggregat_name, = match.groups()
         aggregat = aggregats[aggregat_name]
         in_parents = exp[-1] == ')'
-        
-
+    char_in_parents = [False]*len(exp)
     counter = 0
-    for i, c in enumerate(exp):
-        if c == '(':
-            counter += 1
-        elif c == ')':
-            counter -= 1
-        elif counter == 0:
-            if c in '&.:@':
-                in_parents = False
-            else:
-                continue
-            if c == '&':
-                return Intersect(parse_dcs(exp[:i]), parse_dcs(exp[i + 1:]))
-            elif c == '.':
-                return Join(exp[:i], parse_dcs(exp[i + 1:]))
-            elif c == ':':
-                type = name2dto.get(exp[:i], exp[:i])
-                return Entity(exp[i+1:], type)
-            elif c == '@':
-                type = name2dto.get(exp[:i], exp[:i])
-                words = exp[i+1:].split(',')
-                return LexEnt(words, type)
+    for op in ops:    
+        for i, c in enumerate(exp):
+            if c == '(':
+                counter += 1
+            elif c == ')':
+                counter -= 1
+            elif counter == 0:
+                if c in '&.:@':
+                    in_parents = False
+                else:
+                    continue
+                if c != op:
+                    continue
+                if c == '&':
+                    return Intersect(parse_dcs(exp[:i]), parse_dcs(exp[i + 1:]))
+                elif c == '.':
+                    return Join(exp[:i], parse_dcs(exp[i + 1:]))
+                elif c == ':':
+                    type = name2dto.get(exp[:i], exp[:i])
+                    func = type2convert.get(type)
+                    id = func(exp[i+1:]) if func is not None else exp[i+1]
+                    return Entity(id, type)
+                elif c == '@':
+                    type = name2dto.get(exp[:i], exp[:i])
+                    words = exp[i+1:].split(',')
+                    return LexEnt(words, type)
             
         assert counter >= 0
     if in_parents:

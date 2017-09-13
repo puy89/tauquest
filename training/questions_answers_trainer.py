@@ -47,6 +47,8 @@ class QuestionsAnswersTrainer:
     @staticmethod
     def is_right_answer(exp, db, expected_answers):
         results = exp.execute(db)
+        if results == expected_answers:
+            return True
         if type(results) != set:
             return False
         if exp.type == MultiCourseDTO:
