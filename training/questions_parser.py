@@ -107,12 +107,6 @@ class QuestionsParser:
                         if 0 < len(res) < 20: 
                             span_exps[i, j].append((exp, None))
                             span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
-                            if len(res) == 1:
-                                for m in xrange(i, j+1):
-                                    for old_exp, _ in span_exps[m, m]:
-                                        if type(old_exp) == LexEnt and exp.type == old_exp.type:
-                                            span_exps[m, m] = []
-                                            break
         #after for: clear short span contained in probably good names?
         for l in xrange(1, n):
             self._db.l = l

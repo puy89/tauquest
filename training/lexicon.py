@@ -9,7 +9,7 @@ class Lexicon:
                 'who': ['cou_lecturers', 'pho_lecturer'],
                 'whom': ['cou_lecturers', 'pho_lecturer'],
                 'teach': ['lec_courses', 'cou_lecturers'],
-                'course': ['lec_courses', 'cou_lecturers', 'mul_department', 'mul_faculty'],
+                'course': ['lec_courses', 'cou_lecturers', 'rev_mul_department', 'rev_mul_faculty'],
                 'taught': ['lec_courses'],
                 'lecturer': ['cou_lecturers', 'lec_courses'],
                 'department': ['mul_department', 'mul_faculty'],
@@ -27,13 +27,13 @@ class Lexicon:
                 'does': [],
                 'by': [],
                 'pm': [],
-                'of': ['mul_department', 'mul_faculty'],
+                'of': ['rev_mul_department', 'rev_mul_faculty'],
                 'about': [],
                 'day': ['occ_day'],
                 'in': ['occ_full_place', 'occ_place', 'mul_semester', 'occ_building', 'mul_department', 'mul_faculty', 'lec_full_office', 'lec_office_building'],
                 'on': ['occ_day', 'occ_place', 'mul_semester', 'occ_building', 'mul_department', 'mul_faculty'],
                 'at': ['occ_full_start_time', 'occ_start_time', 'occ_full_end_time', 'occ_end_time'],
-                "'s": ['cou_lecturers', 'lec_courses', 'mul_department', 'mul_faculty'],
+                "'s": ['cou_lecturers', 'lec_courses', 'rev_mul_department', 'rev_mul_faculty'],
                 'email': ['lec_email'],
                 'address': ['lec_email'],
                 'phone': ['lec_phones', 'pho_phone'],
@@ -90,7 +90,7 @@ class Lexicon:
                         pred = Predicate(opt)
                         if not pred.unknown:
                             parsed_opts.append(pred)
-                            if parsed_opts[-1].is_attr:
+                            if parsed_opts[-1].is_attr and not parsed_opts[-1].is_rev:
                                 rev_pred = Predicate('rev_' + opt)
                                 if not rev_pred.unknown:
                                     parsed_opts.append(rev_pred)
