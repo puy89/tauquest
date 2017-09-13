@@ -240,6 +240,7 @@ class Join(Expression):
     def execute(self, db):#what a fucked function!!!!
         if self.saved_res:
             return self.saved_res
+        assert not self.pred.unknown
         un = self.un
         pred = self.pred.pred
         table = db.type2table.get(self.type)

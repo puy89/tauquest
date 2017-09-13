@@ -24,10 +24,10 @@ generic_questions = [('What courses of {department} are on {day}?', '(rev_mul_de
                      ('where is the course {course} located?', 'occ_full_place.cou_occurences.mul_courses.multi_course@{course}'),
                      ('where is course {course} located?', 'occ_full_place.cou_occurences.mul_courses.multi_course@{course}'),
                      ('what is the latest class of {department} on {day}?', 'cou_multi_course.occ_course.latest(cou_occurences.mul_courses.rev_mul_department.department@{department}&rev_occ_day.day:{day})'),
-                     ('what courses collide with {course}?', 'cou_occurences.mul_courses.collide.cou_occurences.mul_courses.multi_course@{course}'),
-                     ('what courses collide with the recitation of {course}?', 'cou_occurences.mul_courses.collide.(cou_occurences.mul_courses.multi_course@{course}&rev_occ_kind.kind:recitation)'),
-                     ('what courses collide with the course {course}?', 'cou_occurences.mul_courses.collide.cou_occurences.mul_courses.multi_course@{course}'),
-                     ('what courses collide with the recitation of the course {course}?', 'cou_occurences.mul_courses.collide.(cou_occurences.mul_courses.multi_course@{course}&rev_occ_kind.kind:recitation)')]
+                     ('what courses collide with {course}?', 'cou_multi_course.occ_course.intersect.cou_occurences.mul_courses.multi_course@{course}'),
+                     ('what courses collide with the recitation of {course}?', 'cou_multi_course.occ_course.intersect.(cou_occurences.mul_courses.multi_course@{course}&rev_occ_kind.kind:recitation)'),
+                     ('what courses collide with the course {course}?', 'cou_multi_course.occ_course.intersect.cou_occurences.mul_courses.multi_course@{course}'),
+                     ('what courses collide with the recitation of the course {course}?', 'cou_multi_course.occ_course.intersect.(cou_occurences.mul_courses.multi_course@{course}&rev_occ_kind.kind:recitation)')]
 
 ''''what courses of {department} are adjacent to {course}?'''
 
@@ -71,7 +71,7 @@ def create_sample_from_generics(generic_questions, db):
     answers = []
     for q, exp in tqdm(generic_questions):
         s = {}
-        while not 1 <= len(s) <= 3:
+        while not 1 <= len(s) <= 500:
             formats = format_p.findall(q)
             kwargs = {f: format2find[f](db) for f in formats}
             answers.append(parse_dcs(exp.format(**kwargs)).execute(db))
