@@ -17,10 +17,12 @@ email_p = re.compile('[a-z0-9A-Z_]@[a-z0-9A-Z_]\\.[a-z0-9A-Z_](\\.[a-z0-9A-Z_])?
 phone_p = re.compile('([0-9]{2})\\-?([0-9]{7})')
 
 
-bridge_dict = {OccurenceDTO: ([Predicate('occ_course'), Predicate('cou_multi_course')], True),
+course_bridge_dict = {OccurenceDTO: ([Predicate('occ_course'), Predicate('cou_multi_course')], True),
                MultiCourseDTO: ([Predicate('mul_courses'), Predicate('cou_occurences')], True),
-               CourseDTO: ([Predicate('cou_multi_course'), Predicate('cou_occurences')], False),
-              }
+               CourseDTO: ([Predicate('cou_multi_course'), Predicate('cou_occurences')], False)}
+
+bridge_dict = {'department': ([Predicate('rev_mul_department')], False),
+               'faculty': ([Predicate('rev_mul_faculty')], False)}
 
         
 
@@ -32,8 +34,9 @@ class QuestionsParser:
         self._feature_extractor = FeatureExtractor(db)
 
     def course_bridge(self, exp, span, sent):
+        
         exps = []
-        preds = bridge_dict.get(exp.type)
+        preds = course_bridge_dict.get(exp.type)
         if preds is None:
             return exps
         preds, recurrent = preds
@@ -42,7 +45,7 @@ class QuestionsParser:
             if recurrent:
                 exp = join
             exps.append((join, self._feature_extractor.extract_features(sent, join)))
-        return exps
+        return exps    
 
     def parse_regexp(self, time):
         match = time_p.match(time)

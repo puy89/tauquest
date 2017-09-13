@@ -290,6 +290,16 @@ class Join(Expression):
 
 class LexEnt(Expression):
     def __init__(self, words, type, span=()):
+        if not isinstance(words, list):
+            words = list(words)
+        #nltk seperate the 's
+        try:
+            i = words.index("'s") 
+            if i > 0:
+                del words[i]
+                words[i -1 ] += "'s"
+        except ValueError:
+            pass
         self.pcapital = mean([w[0].isupper() for w in words])
         self.words = [word.lower() for word in words]
         self.pwords = None
@@ -478,7 +488,7 @@ def parse_dcs(exp):
                 elif c == ':':
                     type = name2dto.get(exp[:i], exp[:i])
                     func = type2convert.get(type)
-                    id = func(exp[i+1:]) if func is not None else exp[i+1]
+                    id = func(exp[i+1:]) if func is not None else exp[i+1:]
                     return Entity(id, type)
                 elif c == '@':
                     type = name2dto.get(exp[:i], exp[:i])

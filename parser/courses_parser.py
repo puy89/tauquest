@@ -92,7 +92,7 @@ def parse_courses(lecturers):
                                       place=p or None,
                                       building=building)
                 course.occurences.append(occurence)
-            course.kind = kind
+            course.kind = kind_heb2en[kind]
             courses.append(course)
             faculty, department = department_heb2en[unicode(course_row[title2idx['department']])]
             moed_a, moed_b = course2test[course_id.replace('-', '')]
