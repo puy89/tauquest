@@ -13,8 +13,9 @@ import re
 
 
 time_p = re.compile('([0-2][0-9])(:([0-5][0-9]))?')
-email_p = re.compile('[a-z0-9A-Z_]@[a-z0-9A-Z_]\\.[a-z0-9A-Z_](\\.[a-z0-9A-Z_])?(\\.[a-z0-9A-Z_])?')
+email_p = re.compile('([a-z0-9A-Z_]+@[a-z0-9A-Z_]+\\.[a-z0-9A-Z_]+(\\.[a-z0-9A-Z_]+)?(\\.[a-z0-9A-Z_]+)?)')
 phone_p = re.compile('([0-9]{2})\\-?([0-9]{7})')
+course_id_p = re.compile('([0-9]{4}\\-[0-9]{4})')
 
 
 course_bridge_dict = {OccurenceDTO: ([Predicate('occ_course'), Predicate('cou_multi_course')], True),
@@ -50,10 +51,11 @@ class QuestionsParser:
     def parse_regexp(self, time):
         match = time_p.match(time)
         if match:
-            t = match.groups()
-            h = int(t[0])
-            m = int(t[2] or 0)
-            return Entity(h*100+m, 'hour')
+            if len(time) <= 5:
+                t, = match.findall()
+                h = int(t[0])
+                m = int(t[2] or 0)
+                return Entity(h*100+m, 'hour')
         match = phone_p.match(time)
         if match:
             pre, phone = match.groups()
@@ -62,6 +64,15 @@ class QuestionsParser:
         if match:
             pre, phone = map(int, match.groups())
             return Entity(pre+'-'+phone, 'phone')
+        match = course_id_p.match(time)
+        if match:
+            course_id = match.groups()
+            return Entity(course_id, 'course_id')
+        match = email_p.match(time)
+        if match:
+            email = match.groups()[0]
+            return Entity(email, 'email')
+        
         
         
     

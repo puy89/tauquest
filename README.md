@@ -10,7 +10,7 @@ This project contains the following packages:
                                 3. an example files directory is attached
  2. db - contains all the database related entities and executors for querying the database
  3. dto - contains all the entities in a non ORM data structure
- 4. expression - contains all the predicates for the parser
- 5. parser - contains all the semantic parser related classes
+ 4. expression - contains classes which represent lambda-dcs expressions
+ 5. parser - contains raw data, and the script which create the database
  6. training - contains all the training related classes.
     6.1. main.py - to run the training prompt: python main.py

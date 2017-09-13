@@ -67,6 +67,9 @@ pred2type = dict(start_time='hour',
                  email='email',
                  title='title',
                  honor='honor',
+                 semester='semester',
+                 name='name',
+                 course_id='course_id'
                 )
 pred2type.update({k: dto for k, (dto, _) in name2cls.iteritems()})
 pred2type.update({k+'s': dto for k, (dto, _) in name2cls.iteritems()})

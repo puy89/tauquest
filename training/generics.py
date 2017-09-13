@@ -8,8 +8,8 @@ except ImportError:
 
 
 generic_questions = [('What courses of {department} are on {day}?', '(rev_mul_department.department@{department})&(cou_multi_course.occ_course.rev_occ_day.day:{day})'),
-                     ('what courses of {department} are after {course}?', '(rev_mul_department.department@{department})&(cou_multi_course.occ_course.after.cou_occurences.occ_courses.multi_course@{course})'),
-                     ('what courses of {department} are before {course}?', '(rev_mul_department.department@{department})&(cou_multi_course.occ_course.before.cou_occurences.occ_courses.multi_course@{course})'),
+                     ('what courses of {department} are after {course}?', '(rev_mul_department.department@{department})&(cou_multi_course.occ_course.after.cou_occurences.mul_courses.multi_course@{course})'),
+                     ('what courses of {department} are before {course}?', '(rev_mul_department.department@{department})&(cou_multi_course.occ_course.before.cou_occurences.mul_courses.multi_course@{course})'),
                      ('who is the lecturer of {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
                      ('who is the lecturer of the course {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
                      ('who teaches the course {course}?',  'cou_lecturers.mul_courses.multi_course@{course}'),
