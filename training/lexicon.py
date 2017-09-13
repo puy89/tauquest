@@ -10,7 +10,7 @@ class Lexicon:
                 'whom': ['cou_lecturers', 'pho_lecturer'],
                 'teach': ['lec_courses', 'cou_lecturers'],
                 'course': ['lec_courses', 'cou_lecturers'],
-                'taught': ['lec_courses', 'cou_lecturers'],
+                'taught': ['lec_courses'],
                 'lecturer': ['cou_lecturers', 'lec_courses'],
                 'department': ['mul_department', 'mul_faculty'],
                 'faculty': ['mul_faculty', 'mul_department'],

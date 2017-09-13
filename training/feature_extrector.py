@@ -1,5 +1,5 @@
 import numpy as np
-from expression.expression import Join, Intersect, LexEnt
+from expression.expression import Join, Intersect, LexEnt, Aggregation
 from nltk.data import load
 
 NUMBER_OF_FEATURES = 3000
@@ -41,7 +41,7 @@ class FeatureExtractor:
                 if right_bound > left_bound:
                     skips.append((left_bound, right_bound))
                 dfs(node.un)
-            if type(node) is Intersect:
+            elif type(node) is Intersect:
                 n_intersects[0] += 1
                 left_bound = min(node.exp1.span[1], node.exp2.span[1]) + 1
                 right_bound = max(node.exp1.span[0], node.exp2.span[0])
@@ -50,10 +50,12 @@ class FeatureExtractor:
                 dfs(node.exp1)
                 dfs(node.exp2)
                 # TODO bridge
-            if type(node) is LexEnt:
+            elif type(node) is LexEnt:
                 assert node.pwords is not None
                 pcapitals.append(node.pcapital)
                 pwords.append(node.pwords)
+            elif isinstance(node, Aggregation):
+                dfs(node.exp)
         if exp.span[0] > 0:
             skips.append((0, exp.span[0]))
         if exp.span[1] < len(sent)-1:

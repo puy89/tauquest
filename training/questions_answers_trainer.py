@@ -13,6 +13,7 @@ class QuestionsAnswersTrainer:
         self._db = db
         self._lexicon = lexicon
         self._questions_parser = QuestionsParser(db, self._lexicon)
+        self.theta = None
 
     def adagrad(self, gradient, x0, step, iterations, adaptive=False):
         eps = 1e-06
@@ -80,7 +81,7 @@ class QuestionsAnswersTrainer:
             return -grad
 
         iters = iters or len(quests)
-        self.theta = self.adagrad(gradient, np.zeros(NUMBER_OF_FEATURES), 0.01, iters)
+        self.theta = self.adagrad(gradient, np.zeros(NUMBER_OF_FEATURES) if self.theta is None else self.theta, 0.01, iters)
         return self.theta
 
     def eval(self, question, theta=None, k=100):

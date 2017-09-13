@@ -30,12 +30,6 @@ funcs = {'<': (lambda x, y: x is not None and y is not None and x < y, 'time'),
          'initof': (lambda x, y: x is not None and y is not None and x.startswith(y), String),
          }
 
-name_types = {CourseDTO: 'Course',
-              LecturerDTO: 'Lecturer',
-              Integer: 'Integer',
-              String: 'String',
-              Unicode: 'Unicode'}
-
 clss = [(CourseDTO, Course), (MultiCourseDTO, MultiCourse),
        (OccurenceDTO, Occurence), (LecturerDTO, Lecturer),
         (PhoneDTO, Phone), (ExamDTO, Exam), ]
@@ -47,9 +41,10 @@ manys_preds = {k for _, cl in init2cls.values() for k, v in vars(cl).items() if 
 
 name2cls = {cl.__tablename__: (dto_cl, cl) for dto_cl, cl in clss}
 
-dto2name = {dto_cl: k for k, (dto_cl, cl) in name2cls.iteritems()}
+name2dto = {cl.__tablename__: dto_cl for dto_cl, cl in clss}
 
-types_name = {v: k for k, v in name_types.items()}
+dto2name = {dto: k for k, dto in name2dto.iteritems()}
+
 
 pred2type = dict(start_time='hour',
                  end_time='hour',
@@ -91,25 +86,25 @@ multi_course_composed_pred = {'moed_a':lambda mc: mc.test.moed_a,
 '''
 
 class DCS(object):
-    pass
+    span = ()
+    is_func = False
 
 class Expression(DCS):
-    pass
+    saved_res = None
+    is_ent = False
 
 
 class Entity(Expression):
     def __init__(self, id, type, span=[]):
         self.id = id
         self.type = type
-        self.is_func = False
         self.span = span
+        is_ent = True
 
     def execute(self, db):
-        type = self.type
-        if type is CourseDTO:
-            return {db.courses[self.id]}
-        elif type is LecturerDTO:
-            return {db.lecturers[self.id]}
+        table = db.type2table.get(self.type)
+        if table is not None:
+            return {table[self.id]}
         else:
             return {self.id}
 
@@ -119,37 +114,6 @@ class Entity(Expression):
     def copy(self, span):
         return Entity(self.id, self.type, span)    
 
-class Courses(Expression):
-    def __init__(self, span=[]):
-        self.type = CourseDTO
-        self.is_func = False
-        self.span = span
-
-    def execute(self, db):
-        return set(db.courses.values())
-
-    def __str__(self):
-        return 'Courses'
-    
-    def copy(self, span):
-        return Courses(self, span)    
-
-
-
-class Lecturers(Expression):
-    def __init__(self, span=[]):
-        self.type = LecturerDTO
-        self.is_func = False
-        self.span = span
-
-    def execute(self, db):
-        return set(db.lecturers.values())
-
-    def __str__(self):
-        return 'Lecturers'
-    
-    def copy(self, span):
-        return Lecturers(self, span)    
 
 class Intersect(Expression):
     def __init__(self, exp1, exp2, span=[]):
@@ -158,7 +122,7 @@ class Intersect(Expression):
         self.type = exp1.type
         self.is_func = exp1.is_func and exp2.is_func
         self.span = span
-        self.saved_res = None
+        self.is_ent = exp1.is_ent or exp2.is_ent
 
 
         # assert exp1.type == exp2.type
@@ -187,8 +151,16 @@ class Intersect(Expression):
         return Intersect(self.exp1, self.exp2)    
 
 class BasePredicate(DCS):
-    pass
+    is_attr = False
+    is_union = False
+    is_rev = False
+    is_lec = False
+    unknown = False
+    rtype = None
+    ltype = None
+    init = ''
 
+    
 class Predicate(BasePredicate):
     def __init__(self, pred, span=()):
         if type(pred) is Predicate:
@@ -200,15 +172,6 @@ class Predicate(BasePredicate):
             return
         self.pred = pred
         self.span = span
-        self.is_attr = False
-        self.is_union = False
-        self.is_func = False
-        self.is_rev = False
-        self.is_lec = False
-        self.unknown = False
-        self.rtype = None
-        self.ltype = None
-        self.init = ''
         func_type = funcs.get(pred)
         if func_type is not None:
             self.ltype = self.rtype = func_type[1]
@@ -232,9 +195,7 @@ class Predicate(BasePredicate):
             else:
                 if pred in manys_preds:
                     self.is_union = True
-                    self.ltype = ltype
-                else:
-                    self.ltype = ltype
+                self.ltype = ltype
                 self.rtype = ClassDTO
                 
             self.is_attr = True
@@ -258,16 +219,17 @@ class Join(Expression):
         else:
             self.pred = pred
         self.is_attr = self.pred.is_attr
-
         self.is_attr = self.pred.is_attr
         self.is_union = self.pred.is_union
         self.is_func = self.pred.is_func
         self.is_rev = self.pred.is_rev
+        
         if self.pred.is_func:
             self.type = self.un.type
         else:
             self.type = self.pred.ltype
-        self.saved_res = None
+        if self.is_attr and not self.is_rev and not self.is_union:
+            self.is_ent = self.un.is_ent
 
     def execute(self, db):#what a fucked function!!!!
         if self.saved_res:
@@ -326,8 +288,7 @@ class LexEnt(Expression):
         self.pwords = None
         self.span = span
         self.type = type
-        self.is_func = False
-        self.saved_res = None
+        self.is_ent = True
     
     #def 
     
@@ -349,14 +310,14 @@ class LexEnt(Expression):
         return self.saved_res
     
     def __str__(self):
-        return 'lex_ent_{}({})'.format(dto2name.get(self.type, self.type), ','.join(self.words))
+        return '{}@{}'.format(dto2name.get(self.type, self.type), ','.join(self.words))
 
 class Aggregation(DCS):
     def __init__(self, exp=None, span=[], type=None):
         self.exp = exp
         self.span = span
-        self.is_func = False
         self.rtype = type
+        self.is_ent = True
         
     def copy(self, span, exp=None):
         exp = type(self)(exp or self.exp, span)
@@ -476,18 +437,18 @@ aggregats = dict(min=Min,
                  latestmoedb=LatestMoedB)
 aggregat_p = re.compile('({})\\(.+\\)'.format('|'.join(aggregats)))
 
-
 # TO DO: argmin argmax?
 
 def parse_dcs(exp):
     in_parents = exp[0] == '(' and exp[-1] == ')'
     match = aggregat_p.match(exp)
+    is_agg = False
     if match:
-        assert match.start() == 0 and match.end() == len(exp)  # only aggregation in the top
-        aggregat, = match.groups()
-        aggregat_cls = aggregats[aggregat]
-        # TO DO? handle aggregation combine with not aggregation
-        return aggregat_cls(parse_dcs(exp[len(aggregat) + 1: -1]))
+        is_agg = match.start() == 0
+        aggregat_name, = match.groups()
+        aggregat = aggregats[aggregat_name]
+        in_parents = exp[-1] == ')'
+        
 
     counter = 0
     for i, c in enumerate(exp):
@@ -496,24 +457,25 @@ def parse_dcs(exp):
         elif c == ')':
             counter -= 1
         elif counter == 0:
+            if c in '&.:@':
+                in_parents = False
+            else:
+                continue
             if c == '&':
                 return Intersect(parse_dcs(exp[:i]), parse_dcs(exp[i + 1:]))
-            if c == '.':
-                return Join(parse_dcs(exp[:i]), parse_dcs(exp[i + 1:]))
-            if c == ':':
-                if exp[:i] == 'Unicode':
-                    return Entity(unicode(exp[i + 1:]), Unicode)
-                if exp[:i] == 'Integer':
-                    return Entity(int(exp[i + 1:]), Integer)
-                elif exp[:i] == 'Course':
-                    return Entity(int(exp[i + 1:]), CourseDTO)
-                return Entity(exp[i + 1:], types_name[exp[:i]])
-            in_parents = False
+            elif c == '.':
+                return Join(exp[:i], parse_dcs(exp[i + 1:]))
+            elif c == ':':
+                type = name2dto.get(exp[:i], exp[:i])
+                return Entity(exp[i+1:], type)
+            elif c == '@':
+                type = name2dto.get(exp[:i], exp[:i])
+                words = exp[i+1:].split(',')
+                return LexEnt(words, type)
+            
         assert counter >= 0
     if in_parents:
+        if is_agg:
+            return aggregat(parse_dcs(exp[len(aggregat_name)+1: -1]))
         return parse_dcs(exp[1:-1])
-    if exp == 'Courses':
-        return Courses()
-    if exp == 'Lectures':
-        return Lecturers()
-    return exp
+    assert False

@@ -100,15 +100,17 @@ class QuestionsParser:
                 if not all(word.lower() in self._lexicon for word in words[i: j+1]):
                     for ent_type in self._db.type2words_dict:
                         exp = LexEnt(words[i: j+1], ent_type, (i, j))
-                        if 0 < len(exp.execute(self._db)) < 20: 
+                        res = exp.execute(self._db)
+                        if 0 < len(res) < 20: 
                             span_exps[i, j].append((exp, None))
                             span_exps[i, j].extend(self.course_bridge(exp, (i, j), sent))
-                            if len(exp.execute(self._db)) == 1:
+                            if len(res) == 1:
                                 for m in xrange(i, j+1):
-                                    span_exps[m, m] = []
+                                    for old_exp, _ in span_exps[m, m]:
+                                        if type(old_exp) == LexEnt and exp.type == old_exp.type:
+                                            span_exps[m, m] = []
+                                            break
         #after for: clear short span contained in probably good names?
-        largest_spans = []
-        max_span_size = 0
         for l in xrange(1, n):
             self._db.l = l
             for i in xrange(0, n - l):
@@ -121,14 +123,16 @@ class QuestionsParser:
                         for left, _ in span_exps[i, m]:
                             for right, _ in span_exps[h, j]:
                                 exp = None
-                                dcs1, dcs2 = sorted((left, right), key=lambda dcs: not isinstance(dcs, Expression))
+                                dcs1, dcs2 = sorted((left, right),
+                                                    key=lambda dcs: isinstance(dcs, BasePredicate) or
+                                                                    (isinstance(dcs, Aggregation) and dcs.exp is None))
                                 if isinstance(dcs1, Expression):
                                     if isinstance(dcs2, BasePredicate):
                                         if dcs1.type == dcs2.rtype and not (
                                                     dcs1.is_func and dcs2.is_func):
                                             exp = Join(dcs2, dcs1, (i, j), (i, m))        
-                                    elif isinstance(dcs2, Expression):
-                                        if dcs1.type == dcs2.type and not type(dcs1) == type(dcs2) == LexEnt:
+                                    elif isinstance(dcs2, Expression) and not (isinstance(dcs2, Aggregation) and dcs2.exp is None):
+                                        if dcs1.type == dcs2.type and not (dcs1.is_ent and dcs2.is_ent):
                                             exp = Intersect(dcs1, dcs2, (i, j))
                                     elif isinstance(dcs2, Aggregation) and dcs2.exp is None:
                                         if (dcs2.rtype is None or dcs2.rtype == dcs1.type):

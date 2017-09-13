@@ -122,6 +122,32 @@ class DBCache(object):
                                 'faculty': self.faculties_words_dict}
         print 'db is ready'
 
+generic_questions = [('What courses of {department} are on {day}?', '(rev_mul_department.@{department})&(cou_multi_course.occ_course.rev_day.day:{day})'),
+                     ('what courses of {department} are after {course}?', '(rev_mul_department.@{department})&(cou_multi_course.occ_course.before.cou_occurences.occ_courses.multi_course@{course})'),
+                     ('what courses of {department} are before {course}?', '(rev_mul_department.@{department})&(cou_multi_course.occ_course.after.cou_occurences.occ_courses.multi_course@{course})'),
+                     ('who is the lecturer of {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('who is the lecturer of the course {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('who teaches the course {course}?',  'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('who teaches {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('what is the staff of course {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('what is the staff of {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('what is the staff of the course {course}?', 'cou_lecturers.mul_courses.multi_course@{course}'),
+                     ('where is {course}?', 'occ_full_place.mul_courses.multi_course@{course}'),
+                     ('where is the class {course}?', 'occ_full_place.mul_courses.multi_course@{course}'),
+                     ('where is class {class}?', 'occ_full_place.mul_courses.multi_course@{course}'),
+                     ('where is {course} located?', 'occ_full_place.mul_courses.multi_course@{course}'),
+                     ('where is the course {course} located?', 'occ_full_place.mul_courses.multi_course@{course}'),
+                     ('where is course {course} located?', 'occ_full_place.mul_courses.multi_course@{course}'),
+                     ('what is the latest class of {department} on {day}?', 'cou_multi_course.occ_course.latest(rev_department.@{department}&rev_day:day:{day})')]
+''''what courses of {department} are adjacent to {course}?',
+'what courses collide with {course}?',
+'what courses collide with the recitation of {course}?',
+'what courses collide with the course {course}?',
+'what courses collide with the recitation of the course {course}?']'''
+
+
+def create_sample_from_generics(generic_questions):
+    pass
 
 def load_dataset():
     with open('files/questions-answers.csv') as f:
