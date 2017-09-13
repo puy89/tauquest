@@ -77,7 +77,7 @@ def create_sample_from_generics(generic_questions, db):
             s = parse_dcs(exp.format(**kwargs)).execute(db)
             day = kwargs.get('day')
             if day is not None:
-                kwargs['day'] = days[day]
+                kwargs['day'] = days[day-1]
         questions.append(q.format(**kwargs))
         answers.append(s)
     return questions, answers
