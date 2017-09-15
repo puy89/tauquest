@@ -9,7 +9,6 @@ try:
     from tqdm import tqdm
 except ImportError:
     tqdm = lambda x: x
-sys.stdout = open('log', 'a')
     
 class QuestionsAnswersTrainer:
     def __init__(self, db, lexicon):

@@ -2,7 +2,7 @@
 
 This project contains the following packages:
 
- 1. cmd - contains a command line tool for asking questions:
+ 1. shell - contains a command line tool for asking questions:
     1.1. ask_questions.py - to run it prompt: python ask_questions.py
                             - note that it expects the files directory within the execution path that contains the following:
                                 1. theta.npy (the output theta from the training execution)

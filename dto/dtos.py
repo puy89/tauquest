@@ -16,7 +16,7 @@ class DTOClass(object):
     def __str__(self):
         args = self.get_args()
         values_dict = self.__dict__
-        return ', '.join("{0}: {1}".format(arg, values_dict[arg]) for arg in args)
+        return u', '.join("{0}: {1}".format(arg, str(values_dict[arg])) for arg in args)
 
     @abc.abstractmethod
     def get_args(self):
@@ -133,5 +133,4 @@ class LecturerDTO(DTOClass):
         self.courses = [course_id_to_course_map[id] for id in self.courses]
 
     def get_args(self):
-        return ["id", "name", "site", "email", "office_building", "office", "phones", "fax", "title",
-                "honor"]
+        return ["id", "name", "site", "email", "office_building", "office", "phones", "fax", "honor"]
