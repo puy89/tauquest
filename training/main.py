@@ -23,7 +23,7 @@ def clear(s):
     
 def create_words_dict(ents, func=lambda x: x, ordered=False):
     cache = {}
-    def create_words_dict(ents, path=()):
+    def create_words_dict_rec(ents, path=()):
         if all(sorted(path) == sorted(clear(func(ent)).split()) for ent in ents):
             return None, 1
         d = {}
@@ -51,14 +51,14 @@ def create_words_dict(ents, func=lambda x: x, ordered=False):
         for word, v in d.items():
             if type(v) is set:
                 k = tuple(sorted(path + (word,)))
-                new_d, new_p = create_words_dict(v, path + (word,))
+                new_d, new_p = create_words_dict_rec(v, path + (word,))
                 if new_p == 1:
                     v = {ent for ent in v if sorted(path + (word,)) == sorted(clear(func(ent)).split())}
                 cache[k] = d[word] = (v, new_d, new_p)
                 
         return d, p
 
-    return create_words_dict(ents)[0]
+    return create_words_dict_rec(ents)[0]
 
 
 class DBCache(object):
@@ -98,9 +98,10 @@ class DBCache(object):
         for course in self.courses.values():
             for lecturer in course.lecturers:
                 lecturer.update_courses(self.courses)
-                for phone in lecturer.phones:
-                    phone.update_phone(self.lecturers)
-                    self.phones[phone.id] = phone
+        for lecturer in self.lecturers.values():
+            for phone in lecturer.phones:
+                phone.update_phone(self.lecturers)
+                self.phones[phone.id] = phone
                     
         print 'extract strings from db'
         self.honors = {l.honor for l in self.lecturers.values() if l.honor is not None}
@@ -134,9 +135,11 @@ def load_dataset():
     with open('files/questions-answers.csv') as f:
         r = csv.reader(f)
         questions = []
+        paraphrases = []
         answers = []
         r.next()#next titles row
         for row in r:
+            paraphrases.append(row[0])
             questions.append(row[1])
             anss = row[2].split('#')
             if len(anss) > 1:
@@ -144,7 +147,7 @@ def load_dataset():
             else:
                 answers.append({unicode(cell) for cell in row[2:next((i for i, cell in enumerate(row)
                                                                       if i > 0 and cell == ''), None)]})
-        return questions, answers
+        return questions+paraphrases, answers*2
 
 
 def pretty_print_result(question, result):

@@ -3,10 +3,13 @@ import numpy as np
 from dto.dtos import MultiCourseDTO, LecturerDTO
 from questions_parser import QuestionsParser
 from training.feature_extrector import NUMBER_OF_FEATURES
+from expression.expression import Entity
+import sys
 try:
     from tqdm import tqdm
 except ImportError:
     tqdm = lambda x: x
+sys.stdout = open('log', 'a')
     
 class QuestionsAnswersTrainer:
     def __init__(self, db, lexicon):
@@ -56,12 +59,12 @@ class QuestionsAnswersTrainer:
 
         elif exp.type == LecturerDTO:
             return {lecturer.name for lecturer in results} == expected_answers
-
         else:
             return set(map(unicode, results)) == expected_answers
 
         return False
 
+    
     def train(self, quests, ans, k=1000, iters=None):
         def gradient(theta):
             i = np.random.randint(0, len(quests))
@@ -94,5 +97,9 @@ class QuestionsAnswersTrainer:
     
     def get_exps(self, question, theta=None, k=100):
         theta = self.theta if theta is None else theta
-        exps, _feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
-        return exps
+        exps_feats = np.array(self._questions_parser.parse_sent(question, theta, k)).T
+        if len(exps_feats):
+            exps, _feats = exps_feats
+            return exps
+        return [Entity('error', 'error')]
+        

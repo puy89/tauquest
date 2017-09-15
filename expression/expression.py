@@ -62,14 +62,14 @@ pred2type = dict(start_time='hour',
                  full_place='room',
                  place='room_number',
                  office='room_number',
-                 phone='phone',
-                 fax='phone',
+                 phone='phone_number',
+                 fax='phone_number',
                  email='email',
                  title='title',
                  honor='honor',
                  semester='semester',
                  name='name',
-                 course_id='course_id'
+                 multi_course_id='course_id'
                 )
 pred2type.update({k: dto for k, (dto, _) in name2cls.iteritems()})
 pred2type.update({k+'s': dto for k, (dto, _) in name2cls.iteritems()})
@@ -286,7 +286,7 @@ class Join(Expression):
             return self.saved_res
 
     def __str__(self):
-        return u'({}.{})'.format(self.pred, self.un)
+        return '({}.{})'.format(self.pred, self.un)
     
     def copy(self, span):
         return Join(self.pred.copy(span), self.un.copy(span), span)    
@@ -349,6 +349,7 @@ class Count(Aggregation):
     # TODO: handle mutiplicity
     def __init__(self, exp=None, span=[]):
         Aggregation.__init__(self, exp, span, None)
+        self.type = 'count'
         
         
 

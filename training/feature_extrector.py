@@ -97,5 +97,5 @@ class FeatureExtractor:
         i += len(SHORT_LENS)
         feats[i] = len_ents >= 3;
         i += 1
-
+        feats[i] = exp.is_ent
         return feats

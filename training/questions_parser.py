@@ -52,7 +52,7 @@ class QuestionsParser:
         match = time_p.match(time)
         if match:
             if len(time) <= 5:
-                t, = match.findall()
+                t = time_p.findall(time)[0]
                 h = int(t[0])
                 m = int(t[2] or 0)
                 return Entity(h*100+m, 'hour')
@@ -66,7 +66,7 @@ class QuestionsParser:
             return Entity(pre+'-'+phone, 'phone')
         match = course_id_p.match(time)
         if match:
-            course_id = match.groups()
+            course_id, = match.groups()
             return Entity(course_id, 'course_id')
         match = email_p.match(time)
         if match:

@@ -106,7 +106,7 @@ class PhoneDTO(DTOClass):
         self.lecturer = c.lecturer_id
 
     def update_phone(self, lecturers_map):
-        self.lecturer = lecturers_map.get(self.lecturer)
+        self.lecturer = lecturers_map.get(int(self.lecturer))
 
     def get_args(self):
         return ["id", "phone"]
